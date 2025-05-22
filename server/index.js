@@ -14,13 +14,22 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 8001;
 
 io.on("connection", (socket) => {
-  socket.on("user:joined", () => {});
+  socket.on("user:join", ({ name, room }) => {
+    console.log("scoketId", socket.id);
+    console.log("data", { name, room });
+
+    io.to(socket.id).emit("room:joined", {
+      id: socket.id,
+      success: true,
+      room,
+    });
+  });
 });
 
 app.get("/api", (req, res) => {
   res.send("Socket server is up and running");
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log("Server is running at ", PORT);
 });

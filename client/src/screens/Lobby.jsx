@@ -1,15 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSocket } from "../services/SocketProvider";
 
 function Lobby() {
   const navigate = useNavigate();
   const [details, setDetails] = useState({ name: "", room: "" });
+  const { socket } = useSocket();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    // navigate(`/room/${details.room}?access=granted`);
+    socket.emit("user:join", details);
   };
+
+  useEffect(() => {
+    socket.on("room:joined", ({ id, success, room }) => {
+      sessionStorage.setItem("key", id);
+      if (success) navigate(`/room/${room}?accessId=${id}`);
+    });
+
+    return () => {
+      socket.off("room:joined");
+    };
+  }, []);
 
   return (
     <div className="flex  w-full h-screen justify-center items-center">

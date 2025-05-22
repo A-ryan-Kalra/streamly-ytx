@@ -1,15 +1,31 @@
-import { useLocation, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import {
+  useLocation,
+  Navigate,
+  useNavigationType,
+  useNavigate,
+} from "react-router-dom";
 
 function ProtectedRoute({ children }) {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
+  const navigationType = useNavigationType();
+  const navigate = useNavigate();
 
-  const hasAccess = searchParams.get("access");
+  const hasAccessId = searchParams.get("accessId");
+  const userId = sessionStorage.getItem("key");
 
-  if (hasAccess !== "granted") {
-    return <Navigate to={"/"} state={{ from: location }} replace />;
+  useEffect(() => {
+    if (navigationType === "POP") {
+      sessionStorage.clear();
+      navigate("/");
+    }
+  }, [navigationType]);
+
+  if (hasAccessId === userId) {
+    return children;
   }
-  return children;
+  return <Navigate to={"/"} state={{ from: location }} replace />;
 }
 
 export default ProtectedRoute;
