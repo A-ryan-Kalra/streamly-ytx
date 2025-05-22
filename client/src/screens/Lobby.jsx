@@ -8,7 +8,7 @@ function Lobby() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    navigate(`/room/${details.room}?access=granted`);
+    // navigate(`/room/${details.room}?access=granted`);
   };
 
   return (
