@@ -9,14 +9,17 @@ function Lobby() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    socket.emit("user:join", details);
+    socket.emit("room:join", details);
   };
 
+  function handleUserJoined({ id, success, room, name }) {
+    sessionStorage.setItem("key", id);
+
+    if (success) navigate(`/room/${room}?accessId=${id}&name=${name}`);
+  }
+
   useEffect(() => {
-    socket.on("room:joined", ({ id, success, room }) => {
-      sessionStorage.setItem("key", id);
-      if (success) navigate(`/room/${room}?accessId=${id}`);
-    });
+    socket.on("room:joined", handleUserJoined);
 
     return () => {
       socket.off("room:joined");
