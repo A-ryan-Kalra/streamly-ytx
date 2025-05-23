@@ -14,16 +14,56 @@ function Room() {
   const name = searchParams.get("name");
   const [remoteSocketId, setRemoteSocketId] = useState(null);
   const [resize, setResize] = useState(false);
-
+  const [facingMode, setFacingMode] = useState("user");
+  const [senders, setSenders] = useState([]);
   function handleNewUserJoined(data) {
     setRemoteSocketId(data?.id);
   }
 
-  async function handleCallUser() {
+  // const openRearCamera = async () => {
+  //   for (const track of myStream.getTracks()) {
+  //     track.stop();
+  //   }
+  //   const newMode = facingMode === "user" ? "environment" : "user";
+  //   setFacingMode(newMode);
+  //   handleCallUser(newMode)
+  // };
+
+  const startCamera = async (facingMode) => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode },
+      audio: true,
+    });
+
+    // Replace tracks in peer connection
+    const newSenders = [];
+    stream.getTracks().forEach((track) => {
+      const sender = peer.peer.addTrack(track, stream);
+      newSenders.push(sender);
+    });
+
+    setSenders(newSenders);
+    setMyStream(stream);
+  };
+
+  const switchCamera = async () => {
+    for (const track of myStream.getTracks()) {
+      track.stop();
+    }
+    setMyStream(null);
+
+    const newMode = facingMode === "user" ? "environment" : "user";
+    setFacingMode(newMode);
+
+    // Start camera with new mode
+    handleCallUser(newMode);
+  };
+  console.log("stream", myStream);
+  async function handleCallUser(mode = "user") {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: true,
+        video: { facingMode: mode },
       });
 
       const offer = await peer.getOffer();
@@ -82,9 +122,7 @@ function Room() {
 
       setRemoteStream(remoteStream[0]);
     });
-  }, []);
 
-  useEffect(() => {
     function handleResize() {
       if (window.innerWidth <= 687) {
         setResize(true);
@@ -134,6 +172,17 @@ function Room() {
     handleStreamExecution,
   ]);
 
+  useEffect(() => {
+    return () => {
+      // Cleanup function to stop the video stream when the component unmounts
+      if (myStream) {
+        myStream.getTracks().forEach((track) => {
+          track.stop();
+        });
+      }
+    };
+  }, [myStream]);
+
   return (
     <div className="flex w-full h-full ">
       <div className="flex flex-col gap-y-3 w-full items-center">
@@ -175,7 +224,10 @@ function Room() {
           <div className="relative p-2 overflow-hidden flex flex-col">
             <div className="flex  justify-between items-center ">
               <h1 className="text-3xl font-semibold capitalize">{name}</h1>
-              <div className="p-2 hover:bg-zinc-100 h-fit cursor-pointer">
+              <div
+                onClick={switchCamera}
+                className="p-2 hover:bg-zinc-100 h-fit cursor-pointer"
+              >
                 <SwitchCamera className="w-5 h-5  " />
               </div>
             </div>
