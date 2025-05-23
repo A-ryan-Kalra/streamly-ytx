@@ -2,6 +2,11 @@ import http from "http";
 import express from "express";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __direname = path.dirname(__filename);
 
 dotenv.config();
 const app = express();
@@ -15,6 +20,13 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 8001;
+
+const clientPath = path.join(__direname, "../client/dist");
+app.use(express.static(clientPath));
+
+app.get("*splat", (req, res) => {
+  res.sendFile(path.join(clientPath, "index.html"));
+});
 
 io.on("connection", (socket) => {
   socket.on("room:join", ({ name, room }) => {
@@ -35,7 +47,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("call:accepted", ({ to, ans }) => {
-    io.to(to).emit("call:accepted", { to: socket.id, ans });
+    io.to(to).emit("call:accepted", { from: socket.id, ans });
   });
 
   socket.on("peer:nego:needed", ({ to, offer }) => {
@@ -47,10 +59,11 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get("/api", (req, res) => {
-  res.send("Socket server is up and running");
+app.get("/api/", (req, res) => {
+  res.send("Socket server is up and running.");
 });
 
+// Start the server
 server.listen(PORT, () => {
-  console.log("Server is running at ", PORT);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
