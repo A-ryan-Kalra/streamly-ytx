@@ -202,7 +202,7 @@ function Room() {
           </button>
         )} */}
         {remoteStream && (
-          <div className="relative w-full p-2 overflow-hidden">
+          <div className="relative  p-2 overflow-hidden">
             <h1 className="text-3xl text-center font-semibold">
               Remote Stream
             </h1>
@@ -212,7 +212,7 @@ function Room() {
                 marginInline: "auto",
               }}
               url={remoteStream}
-              width={resize ? "100%" : "50%"}
+              width={"100%"}
               height={"100%"}
               playing
             />
@@ -232,7 +232,6 @@ function Room() {
             <ReactPlayer
               style={{ rotate: facingMode === "user" && "y 180deg" }}
               url={myStream}
-              muted
               width={"100%"}
               height={"100%"}
               playing
