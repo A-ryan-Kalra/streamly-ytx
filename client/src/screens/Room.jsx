@@ -12,41 +12,37 @@ function Room() {
   const [myStream, setMyStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const name = searchParams.get("name");
+  const id = searchParams.get("accessId");
   const [remoteSocketId, setRemoteSocketId] = useState(null);
   const [resize, setResize] = useState(false);
   const [facingMode, setFacingMode] = useState("user");
-  const [senders, setSenders] = useState([]);
+
   function handleNewUserJoined(data) {
     setRemoteSocketId(data?.id);
   }
-
-  // const openRearCamera = async () => {
-  //   for (const track of myStream.getTracks()) {
-  //     track.stop();
-  //   }
-  //   const newMode = facingMode === "user" ? "environment" : "user";
-  //   setFacingMode(newMode);
-  //   handleCallUser(newMode)
-  // };
-
   const startCamera = async (facingMode) => {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode },
       audio: true,
     });
 
-    // Replace tracks in peer connection
-    const newSenders = [];
-    stream.getTracks().forEach((track) => {
-      const sender = peer.peer.addTrack(track, stream);
-      newSenders.push(sender);
-    });
+    const videoTrack = stream.getVideoTracks()[0];
 
-    setSenders(newSenders);
+    const sender = peer.peer
+      .getSenders()
+      .find((s) => s.track?.kind === "video");
+
+    if (sender) {
+      await sender.replaceTrack(videoTrack);
+    } else {
+      // If no video sender exists yet, add the track
+      peer.peer.addTrack(videoTrack, stream);
+    }
+
     setMyStream(stream);
   };
 
-  const switchCamera = async () => {
+  const switchCamera = async (accessId) => {
     for (const track of myStream.getTracks()) {
       track.stop();
     }
@@ -55,10 +51,9 @@ function Room() {
     const newMode = facingMode === "user" ? "environment" : "user";
     setFacingMode(newMode);
 
-    // Start camera with new mode
-    handleCallUser(newMode);
+    await startCamera(newMode);
   };
-  console.log("stream", myStream);
+
   async function handleCallUser(mode = "user") {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -212,7 +207,10 @@ function Room() {
               Remote Stream
             </h1>
             <ReactPlayer
-              style={{ rotate: "y 180deg", marginInline: "auto" }}
+              style={{
+                rotate: facingMode !== "user" && "y 180deg",
+                marginInline: "auto",
+              }}
               url={remoteStream}
               width={resize ? "100%" : "50%"}
               height={"100%"}
@@ -232,7 +230,7 @@ function Room() {
               </div>
             </div>
             <ReactPlayer
-              style={{ rotate: "y 180deg" }}
+              style={{ rotate: facingMode === "user" && "y 180deg" }}
               url={myStream}
               muted
               width={"100%"}

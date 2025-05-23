@@ -15,12 +15,12 @@ function ProtectedRoute({ children }) {
   const hasAccessId = searchParams.get("accessId");
   const userId = sessionStorage.getItem("key");
 
-  // useEffect(() => {
-  //   if (navigationType === "POP") {
-  //     sessionStorage.clear();
-  //     navigate("/");
-  //   }
-  // }, [navigationType]);
+  useEffect(() => {
+    if (navigationType === "POP") {
+      sessionStorage.clear();
+      navigate("/");
+    }
+  }, [navigationType]);
 
   if (hasAccessId === userId) {
     return children;
