@@ -15,9 +15,6 @@ const PORT = process.env.PORT || 8001;
 
 io.on("connection", (socket) => {
   socket.on("room:join", ({ name, room }) => {
-    console.log("scoketId", socket.id);
-    console.log("data", { name, room });
-
     socket.join(room);
 
     io.to(room).emit("user:join", { name, id: socket.id });
@@ -28,6 +25,14 @@ io.on("connection", (socket) => {
       room,
       name,
     });
+  });
+
+  socket.on("user:call", ({ to, offer }) => {
+    io.to(to).emit("incomming:call", { from: socket.id, offer });
+  });
+
+  socket.on("call:accepted", ({ to, ans }) => {
+    io.to(to).emit("call:accepted", { to: socket.id, ans });
   });
 });
 
