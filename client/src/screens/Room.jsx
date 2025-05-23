@@ -47,11 +47,6 @@ function Room() {
 
   console.log(myStream);
 
-  async function handleAcceptedCall({ ans }) {
-    await peer.setRemoteAnswer(ans);
-    sendStreams();
-  }
-
   function sendStreams() {
     for (const track of myStream.getTracks()) {
       console.log("track=", track);
@@ -59,9 +54,15 @@ function Room() {
     }
   }
 
+  async function handleAcceptedCall({ ans }) {
+    await peer.setRemoteAnswer(ans);
+
+    sendStreams();
+  }
+
   async function handleNegoNeededIncomming({ from, offer }) {
     const ans = await peer.getAnswer(offer);
-    SocketProvider.emit("peer:nego:done", { to: from, ans });
+    socket.emit("peer:nego:done", { to: from, ans });
   }
   async function handleNegoNeeded() {
     const offer = await peer.getOffer();
@@ -80,9 +81,7 @@ function Room() {
     peer.peer.addEventListener("track", async (ev) => {
       const remoteStream = ev.streams;
       console.log("GOT TRACKS!!");
-
-      console.log("remoteStream", remoteStream);
-      setRemoteStream(remoteStream);
+      setRemoteStream(remoteStream[0]);
     });
   }, []);
 
@@ -133,7 +132,6 @@ function Room() {
             <h1 className="text-3xl font-semibold">My Stream</h1>
             <ReactPlayer
               style={{ rotate: "y 180deg" }}
-              playIcon={true}
               url={myStream}
               width={768}
               height={600}
@@ -154,7 +152,6 @@ function Room() {
             <h1 className="text-3xl font-semibold">Remote Stream</h1>
             <ReactPlayer
               style={{ rotate: "y 180deg" }}
-              playIcon={true}
               url={remoteStream}
               width={768}
               height={600}
