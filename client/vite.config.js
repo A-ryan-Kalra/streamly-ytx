@@ -6,12 +6,12 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    proxy: {
-      "/socket": {
-        target: "http://localhost:8000", // backend port
-        changeOrigin: true,
-        ws: true, // proxy websockets
-      },
-    },
+    // proxy: {
+    //   "/socket": {
+    //     target: "http://localhost:8000", // backend port
+    //     changeOrigin: true,
+    //     ws: true, // proxy websockets
+    //   },
+    // },
   },
 });
