@@ -34,7 +34,7 @@ function Room() {
 
   async function handleIcommingCall({ from, offer }) {
     setRemoteSocketId(from);
-    console.log({ from, offer });
+
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: true,
@@ -45,11 +45,8 @@ function Room() {
     socket.emit("call:accepted", { ans, to: from });
   }
 
-  console.log(myStream);
-
   function sendStreams() {
     for (const track of myStream.getTracks()) {
-      console.log("track=", track);
       peer.peer.addTrack(track, myStream);
     }
   }
@@ -87,6 +84,12 @@ function Room() {
 
   async function handleNegoNeededFinal({ from, ans }) {
     await peer.setRemoteAnswer(ans);
+
+    socket.emit("open:stream", { remoteSocketId });
+  }
+
+  async function handleStreamExecution() {
+    sendStreams();
   }
 
   useEffect(() => {
@@ -95,6 +98,7 @@ function Room() {
     socket.on("call:accepted", handleAcceptedCall);
     socket.on("peer:nego:needed", handleNegoNeededIncomming);
     socket.on("peer:nego:final", handleNegoNeededFinal);
+    socket.on("open:stream", handleStreamExecution);
 
     return () => {
       socket.off("user:join", handleNewUserJoined);
@@ -102,6 +106,7 @@ function Room() {
       socket.off("call:accepted", handleAcceptedCall);
       socket.off("peer:nego:needed", handleNegoNeededIncomming);
       socket.off("peer:nego:final", handleNegoNeededFinal);
+      socket.off("open:stream", handleStreamExecution);
     };
   }, [
     socket,
@@ -110,6 +115,7 @@ function Room() {
     handleAcceptedCall,
     handleNegoNeededIncomming,
     handleNegoNeededFinal,
+    handleStreamExecution,
   ]);
 
   return (

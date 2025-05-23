@@ -57,6 +57,10 @@ io.on("connection", (socket) => {
   socket.on("peer:nego:done", ({ to, ans }) => {
     io.to(to).emit("peer:nego:final", { from: socket.id, ans });
   });
+
+  socket.on("open:stream", ({ remoteSocketId }) => {
+    io.to(remoteSocketId).emit("open:stream");
+  });
 });
 
 app.get("/api/", (req, res) => {
