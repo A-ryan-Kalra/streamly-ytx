@@ -3,6 +3,7 @@ import { useSocket } from "../services/SocketProvider";
 import { useLocation, useParams } from "react-router-dom";
 import peer from "../services/peer";
 import ReactPlayer from "react-player";
+import { SwitchCamera, SwitchCameraIcon } from "lucide-react";
 function Room() {
   const params = useParams();
   const location = useLocation();
@@ -12,6 +13,7 @@ function Room() {
   const [remoteStream, setRemoteStream] = useState(null);
   const name = searchParams.get("name");
   const [remoteSocketId, setRemoteSocketId] = useState(null);
+  const [resize, setResize] = useState(false);
 
   function handleNewUserJoined(data) {
     setRemoteSocketId(data?.id);
@@ -82,6 +84,20 @@ function Room() {
     });
   }, []);
 
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth <= 687) {
+        setResize(true);
+      } else {
+        setResize(false);
+      }
+    }
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   async function handleNegoNeededFinal({ from, ans }) {
     await peer.setRemoteAnswer(ans);
 
@@ -125,7 +141,7 @@ function Room() {
           Room No. <b>{params?.roomId}</b>
         </h1>
         <h3> {remoteSocketId ? "Connected" : "Not Connected"}</h3>
-        {remoteSocketId && (
+        {remoteSocketId && !remoteStream && (
           <button
             onClick={handleCallUser}
             className="border-[1px] p-1 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
@@ -133,37 +149,45 @@ function Room() {
             Call
           </button>
         )}
-        {myStream && (
-          <>
-            <h1 className="text-3xl font-semibold">My Stream</h1>
-            <ReactPlayer
-              style={{ rotate: "y 180deg" }}
-              url={myStream}
-              width={768}
-              height={600}
-              playing
-            />
-          </>
-        )}
-        {myStream && (
+        {/* {myStream && (
           <button
             onClick={sendStreams}
             className="border-[1px] p-1 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
           >
             Send Stream
           </button>
-        )}
+        )} */}
         {remoteStream && (
-          <>
-            <h1 className="text-3xl font-semibold">Remote Stream</h1>
+          <div className="relative w-full p-2 overflow-hidden">
+            <h1 className="text-3xl text-center font-semibold">
+              Remote Stream
+            </h1>
             <ReactPlayer
-              style={{ rotate: "y 180deg" }}
+              style={{ rotate: "y 180deg", marginInline: "auto" }}
               url={remoteStream}
-              width={768}
-              height={600}
+              width={resize ? "100%" : "50%"}
+              height={"100%"}
               playing
             />
-          </>
+          </div>
+        )}
+        {myStream && (
+          <div className="relative p-2 overflow-hidden flex flex-col">
+            <div className="flex  justify-between items-center ">
+              <h1 className="text-3xl font-semibold capitalize">{name}</h1>
+              <div className="p-2 hover:bg-zinc-100 h-fit cursor-pointer">
+                <SwitchCamera className="w-5 h-5  " />
+              </div>
+            </div>
+            <ReactPlayer
+              style={{ rotate: "y 180deg" }}
+              url={myStream}
+              muted
+              width={"100%"}
+              height={"100%"}
+              playing
+            />
+          </div>
         )}
       </div>
     </div>
