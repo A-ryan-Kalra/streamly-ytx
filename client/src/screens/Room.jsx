@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSocket } from "../services/SocketProvider";
-import { useLocation, useNavigationType, useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import peer from "../services/peer";
 import ReactPlayer from "react-player";
 import { Mic, MicOff, SwitchCamera, SwitchCameraIcon } from "lucide-react";
@@ -16,13 +16,11 @@ function Room() {
   const [remoteSocketId, setRemoteSocketId] = useState(null);
   const [facingMode, setFacingMode] = useState("user");
   const [mute, setMute] = useState(false);
-  const [isCamSwitch, setIsCamSwitch] = useState(false);
-  const navigationType = useNavigationType();
+
   function handleNewUserJoined(data) {
     setRemoteSocketId(data?.id);
   }
-  console.log("myStream", myStream?.getVideoTracks());
-  console.log("remoteStream", remoteStream?.getVideoTracks());
+
   const startCamera = async (facingMode) => {
     setMute(false);
 
@@ -50,7 +48,6 @@ function Room() {
       peer.peer.addTrack(videoTrack, stream);
     }
 
-    setIsCamSwitch(true);
     setMyStream(stream);
   };
 
@@ -205,8 +202,11 @@ function Room() {
       // if (myStream && !!isCamSwitch) {
       //   removeStreams();
       // }
+      window.removeEventListener("beforeunload", async () => {
+        await removeStreams();
+      });
     };
-  }, [myStream, isCamSwitch]);
+  }, [myStream]);
 
   const muteAudio = async () => {
     const audioTrack = myStream.getAudioTracks()[0];
