@@ -61,6 +61,9 @@ io.on("connection", (socket) => {
   socket.on("open:stream", ({ remoteSocketId }) => {
     io.to(remoteSocketId).emit("open:stream");
   });
+  socket.on("user:disconnected", ({ to }) => {
+    io.to(to).emit("user:disconnected", { from: socket.id });
+  });
 });
 
 app.get("/api/", (req, res) => {
