@@ -27,7 +27,7 @@ function Lobby() {
   }, []);
 
   return (
-    <div className="flex  w-full h-screen justify-center items-center">
+    <div className="flex  w-full h-[100dvh] justify-center items-center">
       <div className="h-fit w-fit bg-gradient-to-tl from-emerald-400 via-pink-600 to-purple-400">
         <div className="flex gap-y-4 flex-col bg-white items-center p-2 m-1  w-fit h-fit border-[1px] border-zinc-200 ">
           <h1 className="text-4xl font-semibold text-teal-500 ">
