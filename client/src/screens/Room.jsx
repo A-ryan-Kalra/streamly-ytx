@@ -78,16 +78,16 @@ function Room() {
       });
 
       const offer = await peer.getOffer();
-      socket.emit("user:call", { to: remoteSocketId, offer });
+      socket.emit("user:call", { to: remoteSocketId, offer, name });
       setMyStream(stream);
     } catch (error) {
       console.error("Error occured at: ", error?.message);
     }
   }
 
-  async function handleIcommingCall({ from, offer }) {
+  async function handleIcommingCall({ from, offer, name }) {
     setRemoteSocketId(from);
-
+    setRemoteName(name);
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: true,
@@ -224,10 +224,15 @@ function Room() {
         <h1 className="text-2xl font-semibold mt-2">
           Room No. <b>{params?.roomId}</b>
         </h1>
-        <h3> {remoteSocketId ? "Connected" : "Not Connected"}</h3>
+        <h3>
+          {" "}
+          {remoteSocketId ? "" : "The room is empty- No participants yet"}
+        </h3>
         {remoteSocketId && !remoteStream && (
           <div className="flex gap-x-1 items-center flex-col">
-            <p>{remoteName}'s in a room</p>
+            <p className="">
+              <span className="capitalize">{remoteName}'s</span> in a room
+            </p>
             <button
               onClick={() => handleCallUser(facingMode)}
               className="border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
@@ -268,7 +273,7 @@ function Room() {
         {myStream && (
           <div className="relative p-2 overflow-hidden flex flex-col h-[40dvh]">
             <div className="flex  justify-between items-center ">
-              <h1 className="text-3xl font-semibold capitalize">{name}</h1>
+              <h1 className="text-3xl font-semibold">{name}</h1>
               <div className="flex items-center gap-x-2">
                 <div
                   onClick={switchCamera}
