@@ -180,7 +180,6 @@ function Room() {
       setMute((prev) => !prev);
     }
   };
-  console.log(mute);
 
   return (
     <div className="flex w-full h-full ">
@@ -192,7 +191,7 @@ function Room() {
         {remoteSocketId && !remoteStream && (
           <button
             onClick={handleCallUser}
-            className="border-[1px] p-1 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
+            className="border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
           >
             Call
           </button>
@@ -218,7 +217,7 @@ function Room() {
                 height: "100%",
               }}
               url={remoteStream}
-              muted={mute}
+              // muted={mute}
               width={"100%"}
               height={"100%"}
               playing
@@ -240,7 +239,7 @@ function Room() {
                   onClick={muteAudio}
                   className="p-2 hover:bg-zinc-100 h-fit cursor-pointer"
                 >
-                  {!mute ? (
+                  {mute ? (
                     <MicOff className="w-5 h-5  " />
                   ) : (
                     <Mic className="w-5 h-5  " />
