@@ -7,7 +7,11 @@ export const useSocket = () => {
 };
 
 function SocketProvider({ children }) {
-  const socket = useMemo(() => io(import.meta.env.VITE_API_URL));
+  const socket = useMemo(() =>
+    io([import.meta.env.VITE_API_URL, "47ps9w8b-5173.inc1.devtunnels.ms"], {
+      transports: ["polling"],
+    })
+  );
 
   return (
     <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>

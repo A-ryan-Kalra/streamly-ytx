@@ -3,7 +3,7 @@ import { useSocket } from "../services/SocketProvider";
 import { useLocation, useParams } from "react-router-dom";
 import peer from "../services/peer";
 import ReactPlayer from "react-player";
-import { SwitchCamera, SwitchCameraIcon } from "lucide-react";
+import { Mic, MicOff, SwitchCamera, SwitchCameraIcon } from "lucide-react";
 function Room() {
   const params = useParams();
   const location = useLocation();
@@ -14,23 +14,30 @@ function Room() {
   const name = searchParams.get("name");
   const id = searchParams.get("accessId");
   const [remoteSocketId, setRemoteSocketId] = useState(null);
-  const [resize, setResize] = useState(false);
   const [facingMode, setFacingMode] = useState("user");
+  const [mute, setMute] = useState(false);
 
   function handleNewUserJoined(data) {
     setRemoteSocketId(data?.id);
   }
   const startCamera = async (facingMode) => {
+    setMute(false);
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode },
       audio: true,
     });
+    const audioTrack = stream.getAudioTracks()[0];
 
+    const senders = peer.peer.getSenders();
+    if (audioTrack) {
+      const audioSender = senders.find((s) => s.track?.kind === "audio");
+      if (audioSender) {
+        await audioSender.replaceTrack(audioTrack);
+      }
+    }
     const videoTrack = stream.getVideoTracks()[0];
 
-    const sender = peer.peer
-      .getSenders()
-      .find((s) => s.track?.kind === "video");
+    const sender = senders.find((s) => s.track?.kind === "video");
 
     if (sender) {
       await sender.replaceTrack(videoTrack);
@@ -117,18 +124,6 @@ function Room() {
 
       setRemoteStream(remoteStream[0]);
     });
-
-    function handleResize() {
-      if (window.innerWidth <= 687) {
-        setResize(true);
-      } else {
-        setResize(false);
-      }
-    }
-    window.addEventListener("resize", handleResize);
-    handleResize();
-
-    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   async function handleNegoNeededFinal({ from, ans }) {
@@ -178,6 +173,15 @@ function Room() {
     };
   }, [myStream]);
 
+  const muteAudio = async () => {
+    const audioTrack = myStream.getAudioTracks()[0];
+    if (audioTrack) {
+      audioTrack.enabled = !audioTrack.enabled;
+      setMute((prev) => !prev);
+    }
+  };
+  console.log(mute);
+
   return (
     <div className="flex w-full h-full ">
       <div className="flex flex-col gap-y-3 w-full items-center">
@@ -202,7 +206,7 @@ function Room() {
           </button>
         )} */}
         {remoteStream && (
-          <div className="relative  p-2 overflow-hidden">
+          <div className="relative p-2 overflow-hidden flex flex-col ">
             <h1 className="text-3xl text-center font-semibold">
               Remote Stream
             </h1>
@@ -210,8 +214,11 @@ function Room() {
               style={{
                 rotate: facingMode !== "user" && "y 180deg",
                 marginInline: "auto",
+                width: "100%",
+                height: "100%",
               }}
               url={remoteStream}
+              muted={mute}
               width={"100%"}
               height={"100%"}
               playing
@@ -222,18 +229,35 @@ function Room() {
           <div className="relative p-2 overflow-hidden flex flex-col">
             <div className="flex  justify-between items-center ">
               <h1 className="text-3xl font-semibold capitalize">{name}</h1>
-              <div
-                onClick={switchCamera}
-                className="p-2 hover:bg-zinc-100 h-fit cursor-pointer"
-              >
-                <SwitchCamera className="w-5 h-5  " />
+              <div className="flex items-center gap-x-2">
+                <div
+                  onClick={switchCamera}
+                  className="p-2 hover:bg-zinc-100 h-fit cursor-pointer"
+                >
+                  <SwitchCamera className="w-5 h-5  " />
+                </div>
+                <div
+                  onClick={muteAudio}
+                  className="p-2 hover:bg-zinc-100 h-fit cursor-pointer"
+                >
+                  {!mute ? (
+                    <MicOff className="w-5 h-5  " />
+                  ) : (
+                    <Mic className="w-5 h-5  " />
+                  )}
+                </div>
               </div>
             </div>
             <ReactPlayer
-              style={{ rotate: facingMode === "user" && "y 180deg" }}
+              style={{
+                rotate: facingMode === "user" && "y 180deg",
+                width: "100%",
+                height: "100%",
+              }}
               url={myStream}
               width={"100%"}
               height={"100%"}
+              muted={mute}
               playing
             />
           </div>
