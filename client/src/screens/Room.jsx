@@ -146,13 +146,13 @@ function Room() {
   }
 
   async function handleUserDiscconnect({ from }) {
-    // if (from === remoteSocketId) {
-    console.log("first");
-    remoteStream.getTracks().forEach((track) => track.stop());
-    // Clear remoteStream when user disconnects
-    setRemoteStream(null);
-    setRemoteSocketId(null);
-    // }
+    if (from === remoteSocketId) {
+      console.log("first");
+      remoteStream.getTracks().forEach((track) => track.stop());
+      // Clear remoteStream when user disconnects
+      setRemoteStream(null);
+      setRemoteSocketId(null);
+    }
   }
 
   useEffect(() => {
