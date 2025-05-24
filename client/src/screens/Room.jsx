@@ -16,9 +16,11 @@ function Room() {
   const [remoteSocketId, setRemoteSocketId] = useState(null);
   const [facingMode, setFacingMode] = useState("user");
   const [mute, setMute] = useState(false);
+  const [remoteName, setRemoteName] = useState("");
 
   function handleNewUserJoined(data) {
     setRemoteSocketId(data?.id);
+    setRemoteName(data?.name);
   }
 
   const startCamera = async (facingMode) => {
@@ -224,12 +226,15 @@ function Room() {
         </h1>
         <h3> {remoteSocketId ? "Connected" : "Not Connected"}</h3>
         {remoteSocketId && !remoteStream && (
-          <button
-            onClick={() => handleCallUser(facingMode)}
-            className="border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
-          >
-            Call
-          </button>
+          <div className="flex gap-x-1 items-center flex-col">
+            <p>{remoteName}'s in a room</p>
+            <button
+              onClick={() => handleCallUser(facingMode)}
+              className="border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
+            >
+              Accept
+            </button>
+          </div>
         )}
         {/* {myStream && (
           <button
@@ -242,7 +247,7 @@ function Room() {
         {remoteStream && (
           <div className="relative p-2 overflow-hidden flex flex-col h-[50dvh]">
             <h1 className="text-3xl text-center font-semibold">
-              Remote Stream
+              Remote Stream({remoteName})
             </h1>
 
             <ReactPlayer
