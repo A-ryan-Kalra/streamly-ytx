@@ -117,6 +117,7 @@ function Room() {
   async function handleIcommingCall({ from, offer, name }) {
     setRemoteSocketId(from);
     setRemoteName(name);
+    setRequestBack(false);
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: true,
