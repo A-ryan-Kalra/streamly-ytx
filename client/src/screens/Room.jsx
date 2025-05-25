@@ -3,7 +3,13 @@ import { useSocket } from "../services/SocketProvider";
 import { useLocation, useParams } from "react-router-dom";
 import peer from "../services/peer";
 import ReactPlayer from "react-player";
-import { Mic, MicOff, SwitchCamera, SwitchCameraIcon } from "lucide-react";
+import {
+  Mic,
+  MicOff,
+  PowerCircle,
+  SwitchCamera,
+  SwitchCameraIcon,
+} from "lucide-react";
 function Room() {
   const params = useParams();
   const location = useLocation();
@@ -17,10 +23,17 @@ function Room() {
   const [facingMode, setFacingMode] = useState("user");
   const [mute, setMute] = useState(false);
   const [remoteName, setRemoteName] = useState("");
+  const [newStream, setNewStream] = useState(false);
+  const [requestBack, setRequestBack] = useState(false);
 
-  function handleNewUserJoined(data) {
+  async function handleNewUserJoined(data) {
     setRemoteSocketId(data?.id);
     setRemoteName(data?.name);
+    if (myStream) {
+      await peer.peer.addStream(myStream);
+      setNewStream(true);
+    }
+    setRequestBack(false);
   }
 
   const startCamera = async (facingMode) => {
@@ -68,18 +81,34 @@ function Room() {
 
   async function handleCallUser(mode = "user") {
     try {
-      if (myStream) {
-        myStream?.getTracks()?.forEach((track) => track.stop());
-        setMyStream(null);
-      }
+      // myStream?.getTracks()?.forEach((track) => track.stop());
+      // setMyStream(null);
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: { facingMode: mode },
       });
+      if (!myStream) setMyStream(stream);
 
+      if (myStream) {
+        const senders = peer.peer.getSenders();
+        const videoTrack = stream.getVideoTracks()[0];
+        const audioTrack = stream.getAudioTracks()[0];
+
+        const sender = senders.find((s) => s.track?.kind === "video");
+        const audioSender = senders.find((s) => s.track?.kind === "audio");
+
+        if (sender) {
+          await sender.replaceTrack(videoTrack);
+          await audioSender.replaceTrack(audioTrack);
+        } else {
+          // If no video sender exists yet, add the track
+          peer.peer.addTrack(videoTrack, stream);
+          peer.peer.addTrack(audioTrack, stream);
+        }
+      }
       const offer = await peer.getOffer();
       socket.emit("user:call", { to: remoteSocketId, offer, name });
-      setMyStream(stream);
     } catch (error) {
       console.error("Error occured at: ", error?.message);
     }
@@ -106,7 +135,10 @@ function Room() {
 
   async function handleAcceptedCall({ ans }) {
     await peer.setRemoteAnswer(ans);
+
+    // if (!newStream) {
     sendStreams();
+    // }
   }
 
   async function handleNegoNeededIncomming({ from, offer }) {
@@ -132,7 +164,7 @@ function Room() {
 
       setRemoteStream(remoteStream[0]);
     });
-  }, []);
+  }, [myStream]);
 
   async function handleNegoNeededFinal({ from, ans }) {
     await peer.setRemoteAnswer(ans);
@@ -141,16 +173,16 @@ function Room() {
   }
 
   async function handleStreamExecution() {
-    sendStreams();
+    if (!newStream) sendStreams();
   }
 
   async function handleUserDiscconnect({ from }) {
     if (from === remoteSocketId) {
-      console.log("first");
       remoteStream.getTracks().forEach((track) => track.stop());
       // Clear remoteStream when user disconnects
       setRemoteStream(null);
-      setRemoteSocketId(null);
+      setRemoteSocketId("");
+      setRemoteName("");
     }
   }
 
@@ -184,7 +216,9 @@ function Room() {
   ]);
 
   async function removeStreams() {
+    setRequestBack(false);
     console.log("close");
+
     socket.emit("user:disconnected", { to: remoteSocketId });
     await myStream?.getTracks()?.forEach((track) => {
       track.stop();
@@ -192,6 +226,19 @@ function Room() {
     setMyStream(null);
   }
 
+  async function removeUserFromStream() {
+    setRequestBack(true);
+
+    socket.emit("user:disconnected", { to: remoteSocketId });
+    await remoteStream?.getTracks()?.forEach((track) => {
+      track.stop();
+    });
+    setRemoteStream(null);
+    setNewStream(false);
+
+    // setRemoteName('');
+    // setRemoteSocketId("");
+  }
   useEffect(() => {
     window.addEventListener("popstate", async () => {
       await removeStreams();
@@ -201,9 +248,6 @@ function Room() {
     });
 
     return () => {
-      // if (myStream && !!isCamSwitch) {
-      //   removeStreams();
-      // }
       window.removeEventListener("beforeunload", async () => {
         await removeStreams();
       });
@@ -219,8 +263,8 @@ function Room() {
   };
 
   return (
-    <div className="flex w-full h-full ">
-      <div className="flex flex-col gap-y-3 w-full items-center">
+    <div className="  w-full flex max-md:flex-col h-dvh ">
+      <div className="  max-md:border-b-[1px] md:border-r-[1px] flex-col items-center gap-y-2 flex py-2 md:w-[400px]">
         <h1 className="text-2xl font-semibold mt-2">
           Room No. <b>{params?.roomId}</b>
         </h1>
@@ -229,7 +273,7 @@ function Room() {
           {remoteSocketId ? "" : "The room is empty- No participants yet"}
         </h3>
         {remoteSocketId && !remoteStream && (
-          <div className="flex gap-x-1 items-center flex-col">
+          <>
             <p className="">
               <span className="capitalize">{remoteName}'s</span> in a room
             </p>
@@ -237,11 +281,15 @@ function Room() {
               onClick={() => handleCallUser(facingMode)}
               className="border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
             >
-              Accept
+              {requestBack ? "Request to join back" : "Accept"}
             </button>
-          </div>
+          </>
         )}
-        {/* {myStream && (
+        {remoteSocketId && remoteStream && (
+          <h1 className="text-xl">{remoteName} is connected </h1>
+        )}
+      </div>
+      {/* {myStream && (
           <button
             onClick={sendStreams}
             className="border-[1px] p-1 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
@@ -249,10 +297,17 @@ function Room() {
             Send Stream
           </button>
         )} */}
+      <div className="flex flex-col   gap-y-3 w-full h-full items-center">
         {remoteStream && (
-          <div className="relative p-2 overflow-hidden flex flex-col h-[50dvh]">
-            <h1 className="text-3xl text-center font-semibold">
-              Remote Stream({remoteName})
+          <div className="relative p-2 overflow-hidden flex flex-col h-[45dvh]">
+            <h1 className="text-3xl text-center flex justify-between items-center font-semibold">
+              <span>Remote Stream({remoteName})</span>
+              <div
+                onClick={removeUserFromStream}
+                className="hover:bg-zinc-200 cursor-pointer rounded-full transition p-1"
+              >
+                <PowerCircle className="w-5 h-5" />
+              </div>
             </h1>
 
             <ReactPlayer
@@ -270,20 +325,21 @@ function Room() {
             />
           </div>
         )}
+
         {myStream && (
-          <div className="relative p-2 overflow-hidden flex flex-col h-[40dvh]">
+          <div className="relative p-2 overflow-hidden flex flex-col h-[45dvh]">
             <div className="flex  justify-between items-center ">
               <h1 className="text-3xl font-semibold">{name}</h1>
               <div className="flex items-center gap-x-2">
                 <div
                   onClick={switchCamera}
-                  className="p-2 hover:bg-zinc-100 h-fit cursor-pointer"
+                  className="p-2 hover:bg-zinc-100 h-fit rounded-full cursor-pointer"
                 >
                   <SwitchCamera className="w-5 h-5  " />
                 </div>
                 <div
                   onClick={muteAudio}
-                  className="p-2 hover:bg-zinc-100 h-fit cursor-pointer"
+                  className="p-2 hover:bg-zinc-100 h-fit rounded-full cursor-pointer"
                 >
                   {mute ? (
                     <MicOff className="w-5 h-5  " />
