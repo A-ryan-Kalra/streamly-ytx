@@ -161,9 +161,9 @@ function Room() {
 
   useEffect(() => {
     peer.peer.addEventListener("track", async (ev) => {
-      const remoteStream = ev.streams;
+      const remoteStreams = ev.streams;
 
-      setRemoteStream(remoteStream[0]);
+      setRemoteStream(remoteStreams[0]);
     });
   }, [myStream]);
 
@@ -243,17 +243,44 @@ function Room() {
   useEffect(() => {
     window.addEventListener("popstate", async () => {
       await removeStreams();
+      remoteSocketId("");
     });
-    window.addEventListener("beforeunload", async () => {
-      await removeStreams();
+    window.addEventListener("beforeunload", async (e) => {
+      e.preventDefault();
+      setRequestBack(false);
+      console.log("close");
+
+      socket.emit("user:disconnected", { to: remoteSocketId });
+      await myStream?.getTracks()?.forEach((track) => {
+        track.stop();
+      });
+      setMyStream(null);
+      remoteSocketId("");
+      await remoteStream?.getTracks()?.forEach((track) => {
+        track.stop();
+      });
+      setRemoteStream(null);
     });
 
     return () => {
-      window.removeEventListener("beforeunload", async () => {
-        await removeStreams();
+      window.removeEventListener("beforeunload", async (e) => {
+        e.preventDefault();
+        setRequestBack(false);
+        console.log("close");
+
+        socket.emit("user:disconnected", { to: remoteSocketId });
+        await myStream?.getTracks()?.forEach((track) => {
+          track.stop();
+        });
+        setMyStream(null);
+        remoteSocketId("");
+        await remoteStream?.getTracks()?.forEach((track) => {
+          track.stop();
+        });
+        setRemoteStream(null);
       });
     };
-  }, [myStream]);
+  }, [myStream, remoteStream]);
 
   const muteAudio = async () => {
     const audioTrack = myStream.getAudioTracks()[0];
