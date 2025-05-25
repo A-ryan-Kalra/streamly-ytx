@@ -302,12 +302,13 @@ function Room() {
           <div className="relative p-2 overflow-hidden flex flex-col h-[45dvh]">
             <h1 className="text-3xl text-center flex justify-between items-center font-semibold">
               <span>Remote Stream({remoteName})</span>
-              <div
+              <button
+                title="Disconnect Call"
                 onClick={removeUserFromStream}
                 className="hover:bg-zinc-200 cursor-pointer rounded-full transition p-1"
               >
                 <PowerCircle className="w-5 h-5 text-red-500" />
-              </div>
+              </button>
             </h1>
 
             <ReactPlayer
@@ -331,13 +332,15 @@ function Room() {
             <div className="flex  justify-between items-center ">
               <h1 className="text-3xl font-semibold">{name}</h1>
               <div className="flex items-center gap-x-2">
-                <div
+                <button
                   onClick={switchCamera}
+                  title="Switch Camera"
                   className="p-2 hover:bg-zinc-100 h-fit rounded-full cursor-pointer"
                 >
                   <SwitchCamera className="w-5 h-5 text-blue-500" />
-                </div>
-                <div
+                </button>
+                <button
+                  title={mute ? "Unmute" : "Mute"}
                   onClick={muteAudio}
                   className="p-2 hover:bg-zinc-100 h-fit rounded-full cursor-pointer"
                 >
@@ -346,7 +349,7 @@ function Room() {
                   ) : (
                     <Mic className="w-5 h-5 text-teal-700" />
                   )}
-                </div>
+                </button>
               </div>
             </div>
             <ReactPlayer
