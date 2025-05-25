@@ -265,7 +265,7 @@ function Room() {
   return (
     <div className="  w-full flex max-md:flex-col h-dvh ">
       <div className="  max-md:border-b-[1px] md:border-r-[1px] flex-col items-center gap-y-2 flex py-2 md:w-[400px]">
-        <h1 className="text-2xl font-semibold mt-2">
+        <h1 className="text-xl font-semibold mt-2">
           Room No. <b>{params?.roomId}</b>
         </h1>
         <h3>
