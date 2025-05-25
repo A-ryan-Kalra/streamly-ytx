@@ -306,7 +306,7 @@ function Room() {
                 onClick={removeUserFromStream}
                 className="hover:bg-zinc-200 cursor-pointer rounded-full transition p-1"
               >
-                <PowerCircle className="w-5 h-5" />
+                <PowerCircle className="w-5 h-5 text-red-500" />
               </div>
             </h1>
 
@@ -335,16 +335,16 @@ function Room() {
                   onClick={switchCamera}
                   className="p-2 hover:bg-zinc-100 h-fit rounded-full cursor-pointer"
                 >
-                  <SwitchCamera className="w-5 h-5  " />
+                  <SwitchCamera className="w-5 h-5 text-blue-500" />
                 </div>
                 <div
                   onClick={muteAudio}
                   className="p-2 hover:bg-zinc-100 h-fit rounded-full cursor-pointer"
                 >
                   {mute ? (
-                    <MicOff className="w-5 h-5  " />
+                    <MicOff className="w-5 h-5 text-teal-700" />
                   ) : (
-                    <Mic className="w-5 h-5  " />
+                    <Mic className="w-5 h-5 text-teal-700" />
                   )}
                 </div>
               </div>
