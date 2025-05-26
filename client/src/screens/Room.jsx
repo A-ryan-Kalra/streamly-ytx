@@ -243,7 +243,7 @@ function Room() {
   useEffect(() => {
     window.addEventListener("popstate", async () => {
       await removeStreams();
-      remoteSocketId("");
+      setRemoteSocketId("");
     });
     window.addEventListener("beforeunload", async (e) => {
       e.preventDefault();
@@ -255,7 +255,7 @@ function Room() {
         track.stop();
       });
       setMyStream(null);
-      remoteSocketId("");
+      setRemoteSocketId("");
       await remoteStream?.getTracks()?.forEach((track) => {
         track.stop();
       });
@@ -273,7 +273,7 @@ function Room() {
           track.stop();
         });
         setMyStream(null);
-        remoteSocketId("");
+        setRemoteSocketId("");
         await remoteStream?.getTracks()?.forEach((track) => {
           track.stop();
         });
