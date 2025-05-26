@@ -42,7 +42,7 @@ webRtc-ytx - A <strong>real-time</strong> video steaming and <strong>live callin
 > <li>Users have the ability to mute themselves or disconnect from the call at any time, giving them full control over their communication.</li>
 > </ul>
 
-> [!NOTE]
+> [!IMPORTANT]
 >
 > The repo contains two directories, <kbd>client</kbd> and <kbd>server</kbd>, and you can use the project by installing the npm packages in both of the respective directories.
 
