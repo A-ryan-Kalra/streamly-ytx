@@ -72,11 +72,11 @@ webRtc-ytx - A <strong>real-time</strong> video steaming and <strong>live callin
 
 ```
 
-Open <a href='http://localhost:3000'>http://localhost:5173</a> in your browser to see the result.
-
 <div align="center">
-
-Pleasure contributing 🕶️\
+Open <a href='http://localhost:3000'>http://localhost:5173</a> in your browser to see the result.
+<br>
+<br>
+Pleasure contributing 🕶️ <br>
 Aryan Kalra
 
 </div>
