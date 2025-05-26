@@ -30,7 +30,9 @@ webRtc-ytx - A <strong>real-time</strong> video steaming and <strong>live callin
 > [!NOTE]
 >
 > <h4>Seamless Camera Switching</h4>
-> * During a live call, users can switch their camera without any interruptions, allowing for a flexible and smooth experience.
+> <ul>
+> <li> During a live call, users can switch their camera without any interruptions, allowing for a flexible and smooth experience.
+> </li></ul>
 > <h4>Seamless Camera Switching</h4>
 > <ul>
 > <li>During a live call, users can switch their camera without any interruptions, allowing for a flexible and smooth experience.</li>
@@ -40,13 +42,28 @@ webRtc-ytx - A <strong>real-time</strong> video steaming and <strong>live callin
 > <li>Users have the ability to mute themselves or disconnect from the call at any time, giving them full control over their communication.</li>
 > </ul>
 
+> [!NOTE]
+>
+> The repo contains two directories, <kbd>client</kbd> and <kbd>server</kbd>, and you can use the project by installing the npm packages in both of the respective directories.
+
+---
+
 <h3>Install my project with npm<h3>
 
 ```bash
+  Run the following command only if you are outside both the client and server directories.
+
+  npm install --prefix ./server && npm i --prefix ./client
+
+  npm run --prefix ./server dev && npm run --prefix ./client dev
+
+  Or simply follow the given command only if you are inside either the client or server directory.
+
   npm install
   npm run dev (for development server)
   npm run dev
   # or
+  yarn add
   yarn dev
   # or
   pnpm dev
@@ -55,11 +72,11 @@ webRtc-ytx - A <strong>real-time</strong> video steaming and <strong>live callin
 
 ```
 
-Open <a href='http://localhost:3000'>http://localhost:3000</a> with your browser to see the result.
+Open <a href='http://localhost:3000'>http://localhost:5173</a> in your browser to see the result.
 
 <div align="center">
 
-Pleasure contributing\
+Pleasure contributing 🕶️\
 Aryan Kalra
 
 </div>
