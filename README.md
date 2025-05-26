@@ -2,8 +2,8 @@
 <div align="center"><img src="/client/public/webrtc-ytx-template.png" /></div>
 
 <div align="center">
-<h1>webRtc-ytx</h1>
-webRtc-ytx - A <strong>real-time</strong> video steaming and <strong>live calling</strong> web application designed to enable <strong>seamless communication</strong> through <strong>high-quality video and audio</strong>. Perfect for both one and one interactions in real-time.
+<h1>webRtc-ytx 🔥</h1>
+webRtc-ytx 🔥 - A <strong>real-time</strong> video steaming and <strong>live calling</strong> web application designed to enable <strong>seamless communication</strong> through <strong>high-quality video and audio</strong>. Perfect for both one and one interactions in real-time.
 </div>
 
 <h2>Zero Compromise on Privacy</h2>
@@ -21,7 +21,7 @@ webRtc-ytx - A <strong>real-time</strong> video steaming and <strong>live callin
 
 > [!CAUTION]
 >
-> <h3>Unique Room Access</h3>
+> <h3>Unique Room Access 🔒</h3>
 >
 > > Users must enter a username and unique room number before sharing it with others. This ensures a secure and exclusive real-time communication session.
 
@@ -29,22 +29,33 @@ webRtc-ytx - A <strong>real-time</strong> video steaming and <strong>live callin
 
 > [!NOTE]
 >
-> <h4>Seamless Camera Switching</h4>
+> <h4>Seamless Camera Switching 🤳🏻</h4>
 > <ul>
 > <li> During a live call, users can switch their camera without any interruptions, allowing for a flexible and smooth experience.
 > </li></ul>
-> <h4>Seamless Camera Switching</h4>
-> <ul>
-> <li>During a live call, users can switch their camera without any interruptions, allowing for a flexible and smooth experience.</li>
-> </ul>
-> <h4>Call Control Options</h4>
+> <h4>Call Control Options 🔇 </h4>
 > <ul>
 > <li>Users have the ability to mute themselves or disconnect from the call at any time, giving them full control over their communication.</li>
+> </ul>
+> <h4>Reconnection Support 🚪</h4>
+> <ul>
+> <li>If a user disconnects, they can easily rejoin the room. Simply send a request to rejoin, and once approved by the connected peer, the communication can resume without any disruption.</li>
 > </ul>
 
 > [!IMPORTANT]
 >
 > The repo contains two directories, <kbd>client</kbd> and <kbd>server</kbd>, and you can use the project by installing the npm packages in both of the respective directories.
+
+---
+
+<details>
+  <summary>You know what's absolutely free?</summary>
+
+- Leaving a ⭐ star
+- 🍴Forking the repository
+- No hidden fees, no subscriptions — just pure open-source love!
+
+</details>
 
 ---
 
