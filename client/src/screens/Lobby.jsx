@@ -17,14 +17,20 @@ function Lobby() {
 
     if (success) navigate(`/room/${room}?accessId=${id}&name=${name}`);
   }
+  function handleErrorMssage({ message }) {
+    console.log("message= ", message);
+    navigate("/");
+  }
 
   useEffect(() => {
     socket.on("room:joined", handleUserJoined);
+    socket.on("errorMessage", handleErrorMssage);
 
     return () => {
       socket.off("room:joined");
+      socket.off("errorMessage", handleErrorMssage);
     };
-  }, []);
+  }, [handleUserJoined, handleErrorMssage]);
 
   return (
     <div className="flex  w-full h-[100dvh] justify-center items-center">

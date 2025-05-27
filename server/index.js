@@ -28,18 +28,36 @@ app.get("*splat", (req, res) => {
   res.sendFile(path.join(clientPath, "index.html"));
 });
 
+let storeSocketId = [];
+let isRumFull = false;
+
 io.on("connection", (socket) => {
   socket.on("room:join", ({ name, room }) => {
-    socket.join(room);
+    try {
+      isRumFull =
+        storeSocketId.filter((socket) => socket.room == room).length > 1;
 
-    io.to(room).emit("user:join", { name, id: socket.id });
+      if (isRumFull) {
+        throw new Error("Room is full");
+      }
+      storeSocketId.push({ id: socket.id, room });
 
-    io.to(socket.id).emit("room:joined", {
-      id: socket.id,
-      success: true,
-      room,
-      name,
-    });
+      console.log("socket collection", storeSocketId);
+      socket.join(room);
+
+      io.to(room).emit("user:join", { name, id: socket.id });
+
+      io.to(socket.id).emit("room:joined", {
+        id: socket.id,
+        success: true,
+        room,
+        name,
+      });
+    } catch (error) {
+      console.error("Error eoccured at socket: ", error);
+      console.log("storeSocketId in [error]", storeSocketId);
+      socket.emit("errorMessage", { message: error.message });
+    }
   });
 
   socket.on("user:call", ({ to, offer, name }) => {
@@ -61,7 +79,12 @@ io.on("connection", (socket) => {
   socket.on("open:stream", ({ remoteSocketId }) => {
     io.to(remoteSocketId).emit("open:stream");
   });
-  socket.on("user:disconnected", ({ to }) => {
+
+  socket.on("user:disconnected", ({ to, id }) => {
+    storeSocketId = storeSocketId.filter((socket) => socket.id !== id);
+
+    console.log("socket collection", storeSocketId);
+    console.log("user disconnect= ", to);
     io.to(to).emit("user:disconnected", { from: socket.id });
   });
 });
@@ -73,4 +96,9 @@ app.get("/api/", (req, res) => {
 // Start the server
 server.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
+});
+
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).end("Something unexpected happen");
 });

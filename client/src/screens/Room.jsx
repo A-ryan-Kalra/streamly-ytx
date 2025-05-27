@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSocket } from "../services/SocketProvider";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import peer from "../services/peer";
 import ReactPlayer from "react-player";
 import {
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 function Room() {
   const params = useParams();
+  const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const { socket } = useSocket();
@@ -24,10 +25,14 @@ function Room() {
   const [mute, setMute] = useState(false);
   const [remoteName, setRemoteName] = useState("");
   const [newStream, setNewStream] = useState(false);
+  const [isRequestAccepted, setIsRequestAccepted] = useState("");
   const [requestBack, setRequestBack] = useState(false);
+  const [isNegoDone, setIsNegoDone] = useState("false");
 
   async function handleNewUserJoined(data) {
+    console.log("handleNewUserJoined");
     setRemoteSocketId(data?.id);
+    setIsRequestAccepted(id);
     setRemoteName(data?.name);
     if (myStream) {
       await peer.peer.addStream(myStream);
@@ -80,7 +85,9 @@ function Room() {
   };
 
   async function handleCallUser(mode = "user") {
+    console.log("handleCallUser");
     try {
+      setIsRequestAccepted("");
       // myStream?.getTracks()?.forEach((track) => track.stop());
       // setMyStream(null);
 
@@ -106,6 +113,8 @@ function Room() {
           peer.peer.addTrack(videoTrack, stream);
           peer.peer.addTrack(audioTrack, stream);
         }
+        // alert("wow");                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      </s>
+        // sendStreams()
       }
       const offer = await peer.getOffer();
       socket.emit("user:call", { to: remoteSocketId, offer, name });
@@ -115,6 +124,7 @@ function Room() {
   }
 
   async function handleIcommingCall({ from, offer, name }) {
+    console.log("handleIcommingCall");
     setRemoteSocketId(from);
     setRemoteName(name);
     setRequestBack(false);
@@ -124,36 +134,45 @@ function Room() {
     });
 
     setMyStream(stream);
+
     const ans = await peer.getAnswer(offer);
+    // for (const track of stream?.getTracks()) {
+    //   peer.peer.addTrack(track, stream);
+    // }
     socket.emit("call:accepted", { ans, to: from });
   }
 
   function sendStreams() {
-    for (const track of myStream.getTracks()) {
+    for (const track of myStream?.getTracks()) {
       peer.peer.addTrack(track, myStream);
     }
   }
 
   async function handleAcceptedCall({ ans }) {
+    console.log("handleAcceptedCall");
     await peer.setRemoteAnswer(ans);
-
+    console.log("triggered on accepted call ", name);
     // if (!newStream) {
-    sendStreams();
+    // if (!isNegoDone)
+    // sendStreams();
     // }
   }
 
   async function handleNegoNeededIncomming({ from, offer }) {
+    console.log("handleNegoNeededIncomming");
     const ans = await peer.getAnswer(offer);
+    //  sendStreams();
+    setIsNegoDone(id);
     socket.emit("peer:nego:done", { to: from, ans });
   }
   async function handleNegoNeeded() {
+    console.log("handleNegoNeeded");
     const offer = await peer.getOffer();
     socket.emit("peer:nego:needed", { offer, to: remoteSocketId });
   }
 
   useEffect(() => {
     peer.peer.addEventListener("negotiationneeded", handleNegoNeeded);
-
     return () => {
       peer.peer.removeEventListener("negotiationneeded", handleNegoNeeded);
     };
@@ -161,29 +180,42 @@ function Room() {
 
   useEffect(() => {
     peer.peer.addEventListener("track", async (ev) => {
+      console.log("isNegoDone==", isNegoDone);
       const remoteStreams = ev.streams;
-
-      setRemoteStream(remoteStreams[0]);
+      console.log("track triggered");
+      if (id === isNegoDone) setRemoteStream(remoteStreams[0]);
+      // sendStreams();
     });
-  }, [myStream]);
+  }, [myStream, id]);
 
   async function handleNegoNeededFinal({ from, ans }) {
+    console.log("handleNegoNeededFinal");
+    setIsNegoDone("");
     await peer.setRemoteAnswer(ans);
-
     socket.emit("open:stream", { remoteSocketId });
   }
 
   async function handleStreamExecution() {
-    if (!newStream) sendStreams();
+    // sendStreams();
+    // if (!newStream)
+    // console.log("handleStreamExecution ", name);
+    // const stream = await navigator.mediaDevices.getUserMedia({
+    //   video: { facingMode },
+    //   audio: true,
+    // });
+    // setMyStream(stream);
   }
 
   async function handleUserDiscconnect({ from }) {
+    console.log("handleUserDiscconnect");
     if (from === remoteSocketId) {
       remoteStream.getTracks().forEach((track) => track.stop());
       // Clear remoteStream when user disconnects
       setRemoteStream(null);
       setRemoteSocketId("");
       setRemoteName("");
+      setIsRequestAccepted(id);
+      setIsNegoDone("");
     }
   }
 
@@ -216,11 +248,12 @@ function Room() {
     handleUserDiscconnect,
   ]);
 
-  async function removeStreams() {
+  async function removeStreams(id) {
+    console.log("removeStreams");
     setRequestBack(false);
-    console.log("close");
 
-    socket.emit("user:disconnected", { to: remoteSocketId });
+    const remoteId = id;
+    socket.emit("user:disconnected", { to: remoteId, id });
     await myStream?.getTracks()?.forEach((track) => {
       track.stop();
     });
@@ -228,7 +261,9 @@ function Room() {
   }
 
   async function removeUserFromStream() {
+    console.log("removeUserFromStream");
     setRequestBack(true);
+    setIsNegoDone("");
 
     socket.emit("user:disconnected", { to: remoteSocketId });
     await remoteStream?.getTracks()?.forEach((track) => {
@@ -242,15 +277,17 @@ function Room() {
   }
   useEffect(() => {
     window.addEventListener("popstate", async () => {
-      await removeStreams();
+      await removeStreams(remoteSocketId);
+      setIsNegoDone("");
       setRemoteSocketId("");
     });
     window.addEventListener("beforeunload", async (e) => {
       e.preventDefault();
       setRequestBack(false);
+      setIsNegoDone(false);
       console.log("close");
-
-      socket.emit("user:disconnected", { to: remoteSocketId });
+      const remoteId = remoteSocketId;
+      socket.emit("user:disconnected", { to: remoteId, id });
       await myStream?.getTracks()?.forEach((track) => {
         track.stop();
       });
@@ -268,7 +305,7 @@ function Room() {
         setRequestBack(false);
         console.log("close");
 
-        socket.emit("user:disconnected", { to: remoteSocketId });
+        socket.emit("user:disconnected", { to: remoteSocketId, id });
         await myStream?.getTracks()?.forEach((track) => {
           track.stop();
         });
@@ -289,6 +326,9 @@ function Room() {
       setMute((prev) => !prev);
     }
   };
+  console.log("remote", remoteStream);
+  // console.log("isRequest", isRequestAccepted);
+  // console.log("remoteSocketId", remoteSocketId);
 
   return (
     <div className="  w-full flex max-md:flex-col h-dvh ">
@@ -297,9 +337,9 @@ function Room() {
           Room No. <b>{params?.roomId}</b>
         </h1>
         <h3>
-          {" "}
           {remoteSocketId ? "" : "The room is empty- No participants yet"}
         </h3>
+        {/* {id === isRequestAccepted && remoteSocketId && ( */}
         {remoteSocketId && !remoteStream && (
           <>
             <p className="">
@@ -316,15 +356,23 @@ function Room() {
         {remoteSocketId && remoteStream && (
           <h1 className="text-xl">{remoteName} is connected </h1>
         )}
-      </div>
-      {/* {myStream && (
+        {/* {myStream && (
           <button
             onClick={sendStreams}
             className="border-[1px] p-1 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
           >
-            Send Stream
+            Accept Request
           </button>
         )} */}
+      </div>
+      {myStream && (
+        <button
+          onClick={sendStreams}
+          className="border-[1px] p-1 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
+        >
+          Send Stream
+        </button>
+      )}
       <div className="flex flex-col   gap-y-3 w-full h-full items-center">
         {remoteStream && (
           <div className="relative p-2 overflow-hidden flex flex-col h-[45dvh]">
