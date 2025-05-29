@@ -105,24 +105,23 @@ function Room() {
       });
       if (!myStream) setMyStream(stream);
 
-      // if (myStream) {
-      //   const senders = peer.peer.getSenders();
-      //   const videoTrack = stream.getVideoTracks()[0];
-      //   const audioTrack = stream.getAudioTracks()[0];
+      if (myStream) {
+        const senders = peer.peer.getSenders();
+        const videoTrack = stream.getVideoTracks()[0];
+        const audioTrack = stream.getAudioTracks()[0];
 
-      //   const sender = senders.find((s) => s.track?.kind === "video");
-      //   const audioSender = senders.find((s) => s.track?.kind === "audio");
-
-      //   if (sender) {
-      //     await sender.replaceTrack(videoTrack);
-      //     await audioSender.replaceTrack(audioTrack);
-      //   } else {
-      //     // If no video sender exists yet, add the track
-      //     peer.peer.addTrack(videoTrack, stream);
-      //     peer.peer.addTrack(audioTrack, stream);
-      //   }                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 </s>
-      //   sendStreams();
-      // }
+        const sender = senders.find((s) => s.track?.kind === "video");
+        const audioSender = senders.find((s) => s.track?.kind === "audio");
+        if (sender) {
+          await sender.replaceTrack(videoTrack);
+          await audioSender.replaceTrack(audioTrack);
+        } else {
+          // If no video sender exists yet, add the track
+          peer.peer.addTrack(videoTrack, stream);
+          peer.peer.addTrack(audioTrack, stream);
+        }
+        // sendStreams();
+      }
       const offer = await peer.getOffer();
       socket.emit("user:call", { to: remoteSocketId, offer, name });
     } catch (error) {
