@@ -33,7 +33,6 @@ function Room() {
   const [hideStream, setHideStream] = useState(false);
 
   async function handleNewUserJoined(data) {
-    console.log("handleNewUserJoined");
     setRemoteSocketId(data?.id);
 
     setRemoteName(data?.name);
@@ -94,7 +93,6 @@ function Room() {
   };
 
   async function handleCallUser(mode = "user") {
-    console.log("handleCallUser");
     // setShowSentStream(false);
 
     try {
@@ -122,9 +120,8 @@ function Room() {
       //     // If no video sender exists yet, add the track
       //     peer.peer.addTrack(videoTrack, stream);
       //     peer.peer.addTrack(audioTrack, stream);
-      //   }
-      //   // alert("wow");                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      </s>
-      //   // sendStreams()
+      //   }                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 </s>
+      //   sendStreams();
       // }
       const offer = await peer.getOffer();
       socket.emit("user:call", { to: remoteSocketId, offer, name });
@@ -134,8 +131,6 @@ function Room() {
   }
 
   async function handleIcommingCall({ from, offer, name }) {
-    console.log("handleIcommingCall");
-
     setShowSentStream(true);
     setRemoteSocketId(from);
     setRemoteName(name);
@@ -161,10 +156,8 @@ function Room() {
   }
 
   async function handleAcceptedCall({ ans }) {
-    console.log("handleAcceptedCall");
-
     await peer.setRemoteAnswer(ans);
-    console.log("triggered on accepted call ", name);
+
     // if (!newStream) {
     sendStreams();
 
@@ -173,15 +166,12 @@ function Room() {
   }
 
   async function handleNegoNeededIncomming({ from, offer }) {
-    console.log("handleNegoNeededIncomming");
-
     const ans = await peer.getAnswer(offer);
     //  sendStreams();
     setIsNegoDone(id);
     socket.emit("peer:nego:done", { to: from, ans });
   }
   async function handleNegoNeeded() {
-    console.log("handleNegoNeeded");
     const offer = await peer.getOffer();
     socket.emit("peer:nego:needed", { offer, to: remoteSocketId });
   }
@@ -193,15 +183,12 @@ function Room() {
     };
   }, [handleNegoNeeded]);
 
-  console.log("firstJoin", firstJoin);
   useEffect(() => {
     peer.peer.addEventListener("track", async (ev) => {
-      console.log("isNegoDone==", isNegoDone);
-
       if (!remoteStream) {
         socket.emit("trigger:stream", { to: id });
         const remoteStreams = ev.streams;
-        console.log("track triggered");
+
         setRemoteStream(remoteStreams[0]);
         // if (isRequestAccepted === id) {
         //   setTriggerRemoteStream(true);
@@ -209,7 +196,6 @@ function Room() {
         if (!firstJoin) {
           setTriggerRemoteStream(true);
 
-          console.log("streamzz ", myStream);
           // setTimeout(() => {
           //   sendStreams();
           // }, 3000);
@@ -228,10 +214,7 @@ function Room() {
     }
   }, [triggerRemoteStream, myStream]);
 
-  console.log("triggerStream", triggerRemoteStream);
-
   async function handleNegoNeededFinal({ from, ans }) {
-    console.log("handleNegoNeededFinal");
     setIsNegoDone("");
     await peer.setRemoteAnswer(ans);
     socket.emit("open:stream", { remoteSocketId });
@@ -240,7 +223,7 @@ function Room() {
   async function handleStreamExecution() {
     // sendStreams();
     // if (!newStream)
-    // console.log("handleStreamExecution ", name);
+
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode },
       audio: true,
@@ -249,7 +232,6 @@ function Room() {
   }
 
   async function handleUserDiscconnect({ from }) {
-    console.log("handleUserDiscconnect");
     if (from === remoteSocketId) {
       setIsFinishStreaming(true);
       setHideStream(false);
@@ -304,7 +286,6 @@ function Room() {
   ]);
 
   async function removeStreams(id) {
-    console.log("removeStreams");
     setRequestBack(false);
     setHideStream(false);
 
@@ -317,7 +298,6 @@ function Room() {
   }
 
   async function removeUserFromStream() {
-    console.log("removeUserFromStream");
     setRequestBack(true);
     setIsNegoDone("");
     setIsFinishStreaming(true);
@@ -383,7 +363,7 @@ function Room() {
       });
     };
   }, [myStream, remoteStream]);
-  console.log("hide", hideStream);
+
   const muteAudio = async () => {
     const audioTrack = myStream.getAudioTracks()[0];
     if (audioTrack) {
@@ -391,9 +371,6 @@ function Room() {
       setMute((prev) => !prev);
     }
   };
-  console.log("showSentStream", showSentStream);
-  // console.log("isRequest", isRequestAccepted);
-  // console.log("remoteSocketId", remoteSocketId);
 
   return (
     <div className="  w-full flex max-md:flex-col h-dvh ">
