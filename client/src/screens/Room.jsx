@@ -24,9 +24,7 @@ function Room() {
   const [facingMode, setFacingMode] = useState("user");
   const [mute, setMute] = useState(false);
   const [remoteName, setRemoteName] = useState("");
-  const [newStream, setNewStream] = useState(false);
   const [showSentStream, setShowSentStream] = useState(false);
-  const [isRequestAccepted, setIsRequestAccepted] = useState("");
   const [requestBack, setRequestBack] = useState(false);
   const [triggerRemoteStream, setTriggerRemoteStream] = useState(false);
   const [isNegoDone, setIsNegoDone] = useState("");
@@ -37,11 +35,11 @@ function Room() {
   async function handleNewUserJoined(data) {
     console.log("handleNewUserJoined");
     setRemoteSocketId(data?.id);
-    // setIsRequestAccepted(id);
+
     setRemoteName(data?.name);
     if (myStream) {
       await peer.peer.addStream(myStream);
-      setNewStream(true);
+
       // sendStreams();
     }
     setRequestBack(false);
@@ -100,7 +98,6 @@ function Room() {
     // setShowSentStream(false);
 
     try {
-      // setIsRequestAccepted("");
       // myStream?.getTracks()?.forEach((track) => track.stop());
       // setMyStream(null);
 
@@ -177,7 +174,7 @@ function Room() {
 
   async function handleNegoNeededIncomming({ from, offer }) {
     console.log("handleNegoNeededIncomming");
-    setIsRequestAccepted(id);
+
     const ans = await peer.getAnswer(offer);
     //  sendStreams();
     setIsNegoDone(id);
@@ -261,7 +258,7 @@ function Room() {
       setRemoteStream(null);
       setRemoteSocketId("");
       setRemoteName("");
-      // setIsRequestAccepted(id);
+
       setIsNegoDone("");
     }
   }
@@ -330,7 +327,6 @@ function Room() {
       track.stop();
     });
     setRemoteStream(null);
-    setNewStream(false);
 
     // setRemoteName('');
     // setRemoteSocketId("");
