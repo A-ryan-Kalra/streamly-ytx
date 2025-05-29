@@ -32,6 +32,7 @@ function Room() {
   const [isNegoDone, setIsNegoDone] = useState("");
   const [firstJoin, setFirstJoin] = useState(false);
   const [isFinishStreaming, setIsFinishStreaming] = useState(false);
+  const [hideStream, setHideStream] = useState(false);
 
   async function handleNewUserJoined(data) {
     console.log("handleNewUserJoined");
@@ -194,11 +195,14 @@ function Room() {
       peer.peer.removeEventListener("negotiationneeded", handleNegoNeeded);
     };
   }, [handleNegoNeeded]);
+
   console.log("firstJoin", firstJoin);
   useEffect(() => {
     peer.peer.addEventListener("track", async (ev) => {
       console.log("isNegoDone==", isNegoDone);
+
       if (!remoteStream) {
+        socket.emit("trigger:stream", { to: id });
         const remoteStreams = ev.streams;
         console.log("track triggered");
         setRemoteStream(remoteStreams[0]);
@@ -216,7 +220,7 @@ function Room() {
       }
       // sendStreams();
     });
-  }, [myStream, isRequestAccepted, remoteStream, firstJoin]);
+  }, [myStream]);
 
   useEffect(() => {
     if (triggerRemoteStream && myStream) {
@@ -251,7 +255,7 @@ function Room() {
     console.log("handleUserDiscconnect");
     if (from === remoteSocketId) {
       setIsFinishStreaming(true);
-
+      setHideStream(false);
       remoteStream.getTracks().forEach((track) => track.stop());
       // Clear remoteStream when user disconnects
       setRemoteStream(null);
@@ -262,6 +266,14 @@ function Room() {
     }
   }
 
+  const handleTriggerStream = () => {
+    // alert(id);
+    if (!remoteStream) {
+      sendStreams();
+      setHideStream(true);
+    }
+  };
+
   useEffect(() => {
     socket.on("user:join", handleNewUserJoined);
     socket.on("incomming:call", handleIcommingCall);
@@ -270,6 +282,7 @@ function Room() {
     socket.on("peer:nego:final", handleNegoNeededFinal);
     socket.on("open:stream", handleStreamExecution);
     socket.on("user:disconnected", handleUserDiscconnect);
+    socket.on("trigger:stream", handleTriggerStream);
 
     return () => {
       socket.off("user:join", handleNewUserJoined);
@@ -279,6 +292,7 @@ function Room() {
       socket.off("peer:nego:final", handleNegoNeededFinal);
       socket.off("open:stream", handleStreamExecution);
       socket.off("user:disconnected", handleUserDiscconnect);
+      socket.off("trigger:stream", handleTriggerStream);
     };
   }, [
     socket,
@@ -289,11 +303,13 @@ function Room() {
     handleNegoNeededFinal,
     handleStreamExecution,
     handleUserDiscconnect,
+    handleTriggerStream,
   ]);
 
   async function removeStreams(id) {
     console.log("removeStreams");
     setRequestBack(false);
+    setHideStream(false);
 
     const remoteId = id;
     socket.emit("user:disconnected", { to: remoteId, id });
@@ -308,7 +324,7 @@ function Room() {
     setRequestBack(true);
     setIsNegoDone("");
     setIsFinishStreaming(true);
-
+    setHideStream(false);
     socket.emit("user:disconnected", { to: remoteSocketId, id });
     await remoteStream?.getTracks()?.forEach((track) => {
       track.stop();
@@ -336,6 +352,8 @@ function Room() {
       console.log("close");
       setShowSentStream(false);
       const remoteId = remoteSocketId;
+      setHideStream(false);
+
       socket.emit("user:disconnected", { to: remoteId, id });
       await myStream?.getTracks()?.forEach((track) => {
         track.stop();
@@ -355,7 +373,7 @@ function Room() {
         setRequestBack(false);
         console.log("close");
         setShowSentStream(false);
-
+        setHideStream(false);
         socket.emit("user:disconnected", { to: remoteSocketId, id });
         await myStream?.getTracks()?.forEach((track) => {
           track.stop();
@@ -369,7 +387,7 @@ function Room() {
       });
     };
   }, [myStream, remoteStream]);
-
+  console.log("hide", hideStream);
   const muteAudio = async () => {
     const audioTrack = myStream.getAudioTracks()[0];
     if (audioTrack) {
@@ -398,14 +416,18 @@ function Room() {
             </p>
             {requestBack ? (
               <button
-                onClick={() => handleCallUser(facingMode)}
+                onClick={() => {
+                  setHideStream(true);
+
+                  handleCallUser(facingMode);
+                }}
                 className={
                   "border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
                 }
               >
                 Request to join back
               </button>
-            ) : remoteSocketId ? (
+            ) : remoteSocketId && remoteStream ? (
               ""
             ) : (
               <button
@@ -422,25 +444,14 @@ function Room() {
         {remoteSocketId && remoteStream && (
           <h1 className="text-xl">{remoteName} is connected </h1>
         )}
-        {myStream && showSentStream && !isFinishStreaming && (
+        {myStream && showSentStream && !isFinishStreaming && !hideStream && (
           <button
-            onClick={() => {
-              // setShowSentStream(true);
-              sendStreams();
-            }}
+            onClick={sendStreams}
             className="border-[1px] p-1 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
           >
             Reload Stream
           </button>
         )}
-        {/* {myStream && (
-          <button
-            onClick={sendStreams}
-            className="border-[1px] p-1 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
-          >
-            Accept Request
-          </button>
-        )} */}
       </div>
 
       <div className="flex flex-col   gap-y-3 w-full h-full items-center">

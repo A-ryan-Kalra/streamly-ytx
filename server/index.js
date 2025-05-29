@@ -79,12 +79,13 @@ io.on("connection", (socket) => {
   socket.on("open:stream", ({ remoteSocketId }) => {
     io.to(remoteSocketId).emit("open:stream");
   });
+  socket.on("trigger:stream", ({ to }) => {
+    io.to(to).emit("trigger:stream", { from: socket.id });
+  });
 
   socket.on("user:disconnected", ({ to, id }) => {
     storeSocketId = storeSocketId.filter((socket) => socket.id !== id);
 
-    console.log("socket collection", storeSocketId);
-    console.log("user disconnect= ", to);
     io.to(to).emit("user:disconnected", { from: socket.id });
   });
   socket.on("disconnect", (reason) => {
@@ -92,8 +93,6 @@ io.on("connection", (socket) => {
     storeSocketId = storeSocketId.filter(
       (socketMem) => socketMem.id !== socket.id
     );
-    // You can now consider this socket ID as inactive
-    // Optionally remove from your room/user tracking logic
   });
 });
 
