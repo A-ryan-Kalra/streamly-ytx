@@ -87,6 +87,14 @@ io.on("connection", (socket) => {
     console.log("user disconnect= ", to);
     io.to(to).emit("user:disconnected", { from: socket.id });
   });
+  socket.on("disconnect", (reason) => {
+    console.log(`Socket disconnected: ${socket.id}, Reason: ${reason}`);
+    storeSocketId = storeSocketId.filter(
+      (socketMem) => socketMem.id !== socket.id
+    );
+    // You can now consider this socket ID as inactive
+    // Optionally remove from your room/user tracking logic
+  });
 });
 
 app.get("/api/", (req, res) => {

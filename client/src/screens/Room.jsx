@@ -25,20 +25,29 @@ function Room() {
   const [mute, setMute] = useState(false);
   const [remoteName, setRemoteName] = useState("");
   const [newStream, setNewStream] = useState(false);
+  const [showSentStream, setShowSentStream] = useState(false);
   const [isRequestAccepted, setIsRequestAccepted] = useState("");
   const [requestBack, setRequestBack] = useState(false);
-  const [isNegoDone, setIsNegoDone] = useState("false");
+  const [triggerRemoteStream, setTriggerRemoteStream] = useState(false);
+  const [isNegoDone, setIsNegoDone] = useState("");
+  const [firstJoin, setFirstJoin] = useState(false);
+  const [isFinishStreaming, setIsFinishStreaming] = useState(false);
 
   async function handleNewUserJoined(data) {
     console.log("handleNewUserJoined");
     setRemoteSocketId(data?.id);
-    setIsRequestAccepted(id);
+    // setIsRequestAccepted(id);
     setRemoteName(data?.name);
     if (myStream) {
       await peer.peer.addStream(myStream);
       setNewStream(true);
+      // sendStreams();
     }
     setRequestBack(false);
+    setFirstJoin(true);
+    setIsFinishStreaming(false);
+
+    // setShowSentStream(false);
   }
 
   const startCamera = async (facingMode) => {
@@ -69,6 +78,7 @@ function Room() {
     }
 
     setMyStream(stream);
+    sendStreams();
   };
 
   const switchCamera = async (accessId) => {
@@ -86,8 +96,10 @@ function Room() {
 
   async function handleCallUser(mode = "user") {
     console.log("handleCallUser");
+    // setShowSentStream(false);
+
     try {
-      setIsRequestAccepted("");
+      // setIsRequestAccepted("");
       // myStream?.getTracks()?.forEach((track) => track.stop());
       // setMyStream(null);
 
@@ -97,25 +109,25 @@ function Room() {
       });
       if (!myStream) setMyStream(stream);
 
-      if (myStream) {
-        const senders = peer.peer.getSenders();
-        const videoTrack = stream.getVideoTracks()[0];
-        const audioTrack = stream.getAudioTracks()[0];
+      // if (myStream) {
+      //   const senders = peer.peer.getSenders();
+      //   const videoTrack = stream.getVideoTracks()[0];
+      //   const audioTrack = stream.getAudioTracks()[0];
 
-        const sender = senders.find((s) => s.track?.kind === "video");
-        const audioSender = senders.find((s) => s.track?.kind === "audio");
+      //   const sender = senders.find((s) => s.track?.kind === "video");
+      //   const audioSender = senders.find((s) => s.track?.kind === "audio");
 
-        if (sender) {
-          await sender.replaceTrack(videoTrack);
-          await audioSender.replaceTrack(audioTrack);
-        } else {
-          // If no video sender exists yet, add the track
-          peer.peer.addTrack(videoTrack, stream);
-          peer.peer.addTrack(audioTrack, stream);
-        }
-        // alert("wow");                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      </s>
-        // sendStreams()
-      }
+      //   if (sender) {
+      //     await sender.replaceTrack(videoTrack);
+      //     await audioSender.replaceTrack(audioTrack);
+      //   } else {
+      //     // If no video sender exists yet, add the track
+      //     peer.peer.addTrack(videoTrack, stream);
+      //     peer.peer.addTrack(audioTrack, stream);
+      //   }
+      //   // alert("wow");                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      </s>
+      //   // sendStreams()
+      // }
       const offer = await peer.getOffer();
       socket.emit("user:call", { to: remoteSocketId, offer, name });
     } catch (error) {
@@ -125,6 +137,8 @@ function Room() {
 
   async function handleIcommingCall({ from, offer, name }) {
     console.log("handleIcommingCall");
+
+    setShowSentStream(true);
     setRemoteSocketId(from);
     setRemoteName(name);
     setRequestBack(false);
@@ -150,16 +164,19 @@ function Room() {
 
   async function handleAcceptedCall({ ans }) {
     console.log("handleAcceptedCall");
+
     await peer.setRemoteAnswer(ans);
     console.log("triggered on accepted call ", name);
     // if (!newStream) {
-    // if (!isNegoDone)
-    // sendStreams();
+    sendStreams();
+
     // }
+    // if (!isNegoDone)
   }
 
   async function handleNegoNeededIncomming({ from, offer }) {
     console.log("handleNegoNeededIncomming");
+    setIsRequestAccepted(id);
     const ans = await peer.getAnswer(offer);
     //  sendStreams();
     setIsNegoDone(id);
@@ -177,16 +194,40 @@ function Room() {
       peer.peer.removeEventListener("negotiationneeded", handleNegoNeeded);
     };
   }, [handleNegoNeeded]);
-
+  console.log("firstJoin", firstJoin);
   useEffect(() => {
     peer.peer.addEventListener("track", async (ev) => {
       console.log("isNegoDone==", isNegoDone);
-      const remoteStreams = ev.streams;
-      console.log("track triggered");
-      if (id === isNegoDone) setRemoteStream(remoteStreams[0]);
+      if (!remoteStream) {
+        const remoteStreams = ev.streams;
+        console.log("track triggered");
+        setRemoteStream(remoteStreams[0]);
+        // if (isRequestAccepted === id) {
+        //   setTriggerRemoteStream(true);
+        // }
+        if (!firstJoin) {
+          setTriggerRemoteStream(true);
+
+          console.log("streamzz ", myStream);
+          // setTimeout(() => {
+          //   sendStreams();
+          // }, 3000);
+        }
+      }
       // sendStreams();
     });
-  }, [myStream, id]);
+  }, [myStream, isRequestAccepted, remoteStream, firstJoin]);
+
+  useEffect(() => {
+    if (triggerRemoteStream && myStream) {
+      // alert(id);
+      // sendStreams();
+
+      setIsFinishStreaming(false);
+    }
+  }, [triggerRemoteStream, myStream]);
+
+  console.log("triggerStream", triggerRemoteStream);
 
   async function handleNegoNeededFinal({ from, ans }) {
     console.log("handleNegoNeededFinal");
@@ -199,22 +240,24 @@ function Room() {
     // sendStreams();
     // if (!newStream)
     // console.log("handleStreamExecution ", name);
-    // const stream = await navigator.mediaDevices.getUserMedia({
-    //   video: { facingMode },
-    //   audio: true,
-    // });
-    // setMyStream(stream);
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode },
+      audio: true,
+    });
+    setMyStream(stream);
   }
 
   async function handleUserDiscconnect({ from }) {
     console.log("handleUserDiscconnect");
     if (from === remoteSocketId) {
+      setIsFinishStreaming(true);
+
       remoteStream.getTracks().forEach((track) => track.stop());
       // Clear remoteStream when user disconnects
       setRemoteStream(null);
       setRemoteSocketId("");
       setRemoteName("");
-      setIsRequestAccepted(id);
+      // setIsRequestAccepted(id);
       setIsNegoDone("");
     }
   }
@@ -264,8 +307,9 @@ function Room() {
     console.log("removeUserFromStream");
     setRequestBack(true);
     setIsNegoDone("");
+    setIsFinishStreaming(true);
 
-    socket.emit("user:disconnected", { to: remoteSocketId });
+    socket.emit("user:disconnected", { to: remoteSocketId, id });
     await remoteStream?.getTracks()?.forEach((track) => {
       track.stop();
     });
@@ -277,15 +321,20 @@ function Room() {
   }
   useEffect(() => {
     window.addEventListener("popstate", async () => {
+      setShowSentStream(false);
       await removeStreams(remoteSocketId);
+      setIsFinishStreaming(true);
+
       setIsNegoDone("");
       setRemoteSocketId("");
     });
     window.addEventListener("beforeunload", async (e) => {
       e.preventDefault();
+      setIsFinishStreaming(true);
       setRequestBack(false);
       setIsNegoDone(false);
       console.log("close");
+      setShowSentStream(false);
       const remoteId = remoteSocketId;
       socket.emit("user:disconnected", { to: remoteId, id });
       await myStream?.getTracks()?.forEach((track) => {
@@ -302,8 +351,10 @@ function Room() {
     return () => {
       window.removeEventListener("beforeunload", async (e) => {
         e.preventDefault();
+        setIsFinishStreaming(true);
         setRequestBack(false);
         console.log("close");
+        setShowSentStream(false);
 
         socket.emit("user:disconnected", { to: remoteSocketId, id });
         await myStream?.getTracks()?.forEach((track) => {
@@ -326,7 +377,7 @@ function Room() {
       setMute((prev) => !prev);
     }
   };
-  console.log("remote", remoteStream);
+  console.log("showSentStream", showSentStream);
   // console.log("isRequest", isRequestAccepted);
   // console.log("remoteSocketId", remoteSocketId);
 
@@ -345,16 +396,42 @@ function Room() {
             <p className="">
               <span className="capitalize">{remoteName}'s</span> in a room
             </p>
-            <button
-              onClick={() => handleCallUser(facingMode)}
-              className="border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
-            >
-              {requestBack ? "Request to join back" : "Accept"}
-            </button>
+            {requestBack ? (
+              <button
+                onClick={() => handleCallUser(facingMode)}
+                className={
+                  "border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
+                }
+              >
+                Request to join back
+              </button>
+            ) : remoteSocketId ? (
+              ""
+            ) : (
+              <button
+                onClick={() => handleCallUser(facingMode)}
+                className={
+                  "border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
+                }
+              >
+                Connect
+              </button>
+            )}
           </>
         )}
         {remoteSocketId && remoteStream && (
           <h1 className="text-xl">{remoteName} is connected </h1>
+        )}
+        {myStream && showSentStream && !isFinishStreaming && (
+          <button
+            onClick={() => {
+              // setShowSentStream(true);
+              sendStreams();
+            }}
+            className="border-[1px] p-1 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
+          >
+            Reload Stream
+          </button>
         )}
         {/* {myStream && (
           <button
@@ -365,14 +442,7 @@ function Room() {
           </button>
         )} */}
       </div>
-      {myStream && (
-        <button
-          onClick={sendStreams}
-          className="border-[1px] p-1 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
-        >
-          Send Stream
-        </button>
-      )}
+
       <div className="flex flex-col   gap-y-3 w-full h-full items-center">
         {remoteStream && (
           <div className="relative p-2 overflow-hidden flex flex-col h-[45dvh]">
