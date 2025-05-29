@@ -44,6 +44,8 @@ webRtc-ytx 🔥 - A <strong>real-time</strong> video steaming and <strong>live c
 
 > [!IMPORTANT]
 >
+> Each user has the <kbd>reload stream</kbd> option available in their chat room, which enables both users to connect for real-time communication. In case the stream doesn't load, use the above option.
+>
 > The repo contains two directories, <kbd>client</kbd> and <kbd>server</kbd>, and you can use the project by installing the npm packages in both of the respective directories.
 
 ---
