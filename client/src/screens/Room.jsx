@@ -242,8 +242,7 @@ function Room() {
   function removeStreams() {
     setRequestBack(false);
     console.log("close");
-
-    myStream?.getTracks()?.forEach((track) => {
+    myStream.getTracks()?.forEach((track) => {
       track.stop();
     });
     setMyStream(null);
@@ -279,14 +278,11 @@ function Room() {
   }
   useEffect(() => {
     window.addEventListener("popstate", () => {
-      myStream?.getTracks()?.forEach((track) => {
-        track.stop();
-      });
       setIsCamSwitch(false);
-      setMyStream(null);
       removeStreams();
       setRemoteSocketId("");
     });
+
     window.addEventListener("beforeunload", async (e) => {
       e.preventDefault();
       setRequestBack(false);
@@ -322,7 +318,7 @@ function Room() {
         setRemoteStream(null);
       });
     };
-  }, [myStream, remoteStream]);
+  }, [myStream, remoteStream, isFinishCall]);
 
   const muteAudio = async () => {
     const audioTrack = myStream.getAudioTracks()[0];
@@ -367,8 +363,9 @@ function Room() {
               Reload Stream
             </button>
             <p className="text-xs bg-red-600 p-1 text-white">
-              (Optional : Reload Stream If you are unable to communicate with
-              the user after you've accepted the request or joined back.)
+              (Optional : Press Reload Stream or check with another user if you
+              are unable to communicate with each other after accepting or
+              joining back the user.)
             </p>
           </>
         )}
