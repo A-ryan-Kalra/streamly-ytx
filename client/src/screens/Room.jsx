@@ -25,9 +25,10 @@ function Room() {
   const [remoteName, setRemoteName] = useState("");
   const [newStream, setNewStream] = useState(false);
   const [requestBack, setRequestBack] = useState(false);
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   const [showCam, setShowCam] = useState(false);
   const [isCamSwitch, setIsCamSwitch] = useState(false);
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const [isFinishCall, setIsFinishCall] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,55 +51,34 @@ function Room() {
     setRequestBack(false);
   }
 
-  const getCameraDeviceId = async (facingMode = "user") => {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter((d) => d.kind === "videoinput");
-
-    if (facingMode === "user") {
-      return (
-        videoDevices.find((d) => d.label.toLowerCase().includes("front"))
-          ?.deviceId || videoDevices[0]?.deviceId
-      );
-    } else {
-      return (
-        videoDevices.find((d) => d.label.toLowerCase().includes("back"))
-          ?.deviceId || videoDevices[1]?.deviceId
-      );
-    }
-  };
-
   const startCamera = async (facingMode) => {
     setMute(false);
 
-    const deviceId = await getCameraDeviceId(facingMode);
-
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode, deviceId: { exact: deviceId } },
+      video: { facingMode },
       audio: true,
     });
-    setMyStream(stream);
     const audioTrack = stream.getAudioTracks()[0];
-    const videoTrack = stream.getVideoTracks()[0];
 
     const senders = peer.peer.getSenders();
-
-    const audioSender = senders.find((s) => s.track?.kind === "audio");
-    if (audioSender && audioTrack) {
-      await audioSender.replaceTrack(audioTrack);
-    } else if (audioTrack) {
-      peer.peer.addTrack(audioTrack, stream);
+    if (audioTrack) {
+      const audioSender = senders.find((s) => s.track?.kind === "audio");
+      if (audioSender) {
+        await audioSender.replaceTrack(audioTrack);
+      }
     }
+    const videoTrack = stream.getVideoTracks()[0];
 
-    const videoSender = senders.find((s) => s.track?.kind === "video");
-    if (videoSender && videoTrack) {
-      await videoSender.replaceTrack(videoTrack);
-    } else if (videoTrack) {
+    const sender = senders.find((s) => s.track?.kind === "video");
+
+    if (sender) {
+      await sender.replaceTrack(videoTrack);
+    } else {
+      // If no video sender exists yet, add the track
       peer.peer.addTrack(videoTrack, stream);
     }
-    for (const track of stream.getTracks()) {
-      peer.peer.addTrack(track, stream);
-    }
-    // sendStreams();
+
+    setMyStream(stream);
   };
 
   const switchCamera = async (accessId) => {
@@ -118,6 +98,7 @@ function Room() {
     try {
       // myStream?.getTracks()?.forEach((track) => track.stop());
       // setMyStream(null);
+      setIsFinishCall(false);
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -152,6 +133,7 @@ function Room() {
   async function handleIcommingCall({ from, offer, name }) {
     setRemoteSocketId(from);
     setRemoteName(name);
+    setIsFinishCall(false);
     setRequestBack(false);
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
@@ -163,7 +145,7 @@ function Room() {
     socket.emit("call:accepted", { ans, to: from });
   }
 
-  async function sendStreams() {
+  function sendStreams() {
     for (const track of myStream.getTracks()) {
       peer.peer.addTrack(track, myStream);
     }
@@ -173,20 +155,15 @@ function Room() {
     await peer.setRemoteAnswer(ans);
 
     // if (!newStream) {
-    if (showCam) sendStreams();
-
+    sendStreams();
     // }
   }
 
   async function handleNegoNeededIncomming({ from, offer }) {
-    if (!showCam) sendStreams();
-
     const ans = await peer.getAnswer(offer);
     socket.emit("peer:nego:done", { to: from, ans });
   }
   async function handleNegoNeeded() {
-    if (!showCam) sendStreams();
-
     const offer = await peer.getOffer();
     socket.emit("peer:nego:needed", { offer, to: remoteSocketId });
   }
@@ -210,52 +187,27 @@ function Room() {
   async function handleNegoNeededFinal({ from, ans }) {
     await peer.setRemoteAnswer(ans);
 
-    // socket.emit("open:stream", { remoteSocketId });
+    socket.emit("open:stream", { remoteSocketId });
   }
 
   async function handleStreamExecution() {
-    // if (!newStream)
-
-    sendStreams();
-    // if (newStream) {
-    //   alert("op");
-    //   // for (const track of myStream.getTracks()) {
-    //   //   track.stop();
-    //   // }
-    //   // // setIsCamSwitch(true);
-    //   // setMyStream(null);
-
-    //   const stream = await navigator.mediaDevices.getUserMedia({
-    //     video: { facingMode },
-    //     audio: true,
-    //   });
-    //   setMyStream(stream);
-    // }
+    if (!newStream) sendStreams();
   }
 
   async function handleUserDiscconnect({ from, name, isCamSwitch }) {
     if (from === remoteSocketId) {
-      remoteStream?.getTracks()?.forEach((track) => track?.stop());
+      remoteStream.getTracks().forEach((track) => track.stop());
       // Clear remoteStream when user disconnects
       setRemoteStream(null);
       setRemoteSocketId("");
       setRemoteName("");
+      setIsFinishCall(true);
+
       if (isCamSwitch) {
-        await myStream?.getTracks()?.forEach((track) => {
-          track.stop();
-        });
-        setMyStream(null);
+        alert(`${name} left the room`);
         navigate("/");
       }
     }
-  }
-  async function handleRemoved({ from }) {
-    // if (from === remoteSocketId) {
-    alert(`${name} left the room`);
-    await removeStreams();
-    setRemoteSocketId("");
-    navigate("/");
-    // }
   }
 
   useEffect(() => {
@@ -266,7 +218,6 @@ function Room() {
     socket.on("peer:nego:final", handleNegoNeededFinal);
     socket.on("open:stream", handleStreamExecution);
     socket.on("user:disconnected", handleUserDiscconnect);
-    socket.on("removed", handleRemoved);
 
     return () => {
       socket.off("user:join", handleNewUserJoined);
@@ -276,7 +227,6 @@ function Room() {
       socket.off("peer:nego:final", handleNegoNeededFinal);
       socket.off("open:stream", handleStreamExecution);
       socket.off("user:disconnected", handleUserDiscconnect);
-      socket.off("removed", handleRemoved);
     };
   }, [
     socket,
@@ -287,64 +237,62 @@ function Room() {
     handleNegoNeededFinal,
     handleStreamExecution,
     handleUserDiscconnect,
-    handleRemoved,
   ]);
 
-  async function removeStreams() {
-    setRequestBack(true);
+  function removeStreams() {
+    setRequestBack(false);
     console.log("close");
 
-    socket.emit("user:disconnected", {
-      to: remoteSocketId,
-      id,
-      name,
-      isCamSwitch,
-    });
-    await myStream?.getTracks()?.forEach((track) => {
+    myStream?.getTracks()?.forEach((track) => {
       track.stop();
     });
     setMyStream(null);
-    // setRemoteSocketId("");
-    await remoteStream?.getTracks()?.forEach((track) => {
-      track.stop();
-    });
-    setRemoteStream(null);
-
-    if (isCamSwitch) {
-      myStream?.getTracks()?.forEach((track) => {
-        track.stop();
-      });
-      setMyStream(null);
-    }
-    if (isCamSwitch) {
-      navigate("/");
-    }
+    socket.emit("user:disconnected", { to: remoteSocketId, id });
   }
 
   async function removeUserFromStream() {
+    setIsFinishCall(true);
     setRequestBack(true);
 
-    socket.emit("user:disconnected", { to: remoteSocketId, id, name });
     await remoteStream?.getTracks()?.forEach((track) => {
       track.stop();
     });
     setRemoteStream(null);
     setNewStream(false);
-    // navigate("/");
+    if (isCamSwitch) {
+      socket.emit("user:disconnected", {
+        to: remoteSocketId,
+        id,
+        name,
+        isCamSwitch,
+      });
+      navigate("/");
+    } else {
+      socket.emit("user:disconnected", {
+        to: remoteSocketId,
+        id,
+      });
+    }
+
     // setRemoteName('');
     // setRemoteSocketId("");
   }
   useEffect(() => {
-    window.addEventListener("popstate", async () => {
-      await removeStreams();
+    window.addEventListener("popstate", () => {
+      myStream?.getTracks()?.forEach((track) => {
+        track.stop();
+      });
+      setIsCamSwitch(false);
+      setMyStream(null);
+      removeStreams();
       setRemoteSocketId("");
     });
     window.addEventListener("beforeunload", async (e) => {
       e.preventDefault();
       setRequestBack(false);
       console.log("close");
-
-      socket.emit("user:disconnected", { to: remoteSocketId, id, name });
+      setIsCamSwitch(false);
+      socket.emit("user:disconnected", { to: remoteSocketId, id });
       await myStream?.getTracks()?.forEach((track) => {
         track.stop();
       });
@@ -361,8 +309,8 @@ function Room() {
         e.preventDefault();
         setRequestBack(false);
         console.log("close");
-
-        socket.emit("user:disconnected", { to: remoteSocketId, id, name });
+        setIsCamSwitch(false);
+        socket.emit("user:disconnected", { to: remoteSocketId, id });
         await myStream?.getTracks()?.forEach((track) => {
           track.stop();
         });
@@ -390,7 +338,8 @@ function Room() {
         <h1 className="text-xl font-semibold mt-2">
           Room No. <b>{params?.roomId}</b>
         </h1>
-        <h3 className="text-[15px]">
+        <h3>
+          {" "}
           {remoteSocketId ? "" : "The room is empty- No participants yet"}
         </h3>
         {remoteSocketId && !remoteStream && (
@@ -399,12 +348,7 @@ function Room() {
               <span className="capitalize">{remoteName}'s</span> in a room
             </p>
             <button
-              onClick={() => {
-                if (!requestBack && !showCam) {
-                  sendStreams();
-                }
-                handleCallUser(facingMode);
-              }}
+              onClick={() => handleCallUser(facingMode)}
               className="border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
             >
               {requestBack ? "Request to join back" : "Accept"}
@@ -414,7 +358,7 @@ function Room() {
         {remoteSocketId && remoteStream && (
           <h1 className="text-xl">{remoteName} is connected </h1>
         )}
-        {remoteSocketId && (
+        {myStream && !isFinishCall && (
           <>
             <button
               onClick={sendStreams}
@@ -422,15 +366,13 @@ function Room() {
             >
               Reload Stream
             </button>
-            <p className="text-xs bg-red-600 text-white">
-              (Optional :Press Reload Stream or check with another peer if you
-              are unable to communicate with each other after accepting the
-              request or rejoining.)
+            <p className="text-xs bg-red-600 p-1 text-white">
+              (Optional : Reload Stream If you are unable to communicate with
+              the user after you've accepted the request or joined back.)
             </p>
           </>
         )}
       </div>
-
       <div className="flex flex-col   gap-y-3 w-full h-full items-center">
         {remoteStream && (
           <div className="relative p-2 overflow-hidden flex flex-col h-[45dvh]">
@@ -438,8 +380,7 @@ function Room() {
               <span>Remote Stream({remoteName})</span>
               <button
                 title="Disconnect Call"
-                // onClick={removeUserFromStream}
-                onClick={showCam ? removeStreams : removeUserFromStream}
+                onClick={removeUserFromStream}
                 className="hover:bg-zinc-200 cursor-pointer rounded-full transition p-1"
               >
                 <PowerCircle className="w-5 h-5 text-red-500" />
