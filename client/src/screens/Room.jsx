@@ -177,10 +177,14 @@ function Room() {
   }
 
   async function handleNegoNeededIncomming({ from, offer }) {
+    console.log("handleNegoNeededIncomming", name);
+    sendStreams();
     const ans = await peer.getAnswer(offer);
     socket.emit("peer:nego:done", { to: from, ans });
   }
   async function handleNegoNeeded() {
+    sendStreams();
+    console.log("handleNegoNeeded", name);
     const offer = await peer.getOffer();
     socket.emit("peer:nego:needed", { offer, to: remoteSocketId });
   }
@@ -208,21 +212,23 @@ function Room() {
   }
 
   async function handleStreamExecution() {
-    if (!newStream) sendStreams();
-    if (newStream) {
-      alert("op");
-      // for (const track of myStream.getTracks()) {
-      //   track.stop();
-      // }
-      // // setIsCamSwitch(true);
-      // setMyStream(null);
+    // if (!newStream)
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode },
-        audio: true,
-      });
-      setMyStream(stream);
-    }
+    sendStreams();
+    // if (newStream) {
+    //   alert("op");
+    //   // for (const track of myStream.getTracks()) {
+    //   //   track.stop();
+    //   // }
+    //   // // setIsCamSwitch(true);
+    //   // setMyStream(null);
+
+    //   const stream = await navigator.mediaDevices.getUserMedia({
+    //     video: { facingMode },
+    //     audio: true,
+    //   });
+    //   setMyStream(stream);
+    // }
   }
 
   async function handleUserDiscconnect({ from }) {
@@ -272,7 +278,6 @@ function Room() {
     });
     setRemoteStream(null);
     if (isCamSwitch) {
-      alert("wow");
       myStream?.getTracks()?.forEach((track) => {
         track.stop();
       });
@@ -364,7 +369,12 @@ function Room() {
               <span className="capitalize">{remoteName}'s</span> in a room
             </p>
             <button
-              onClick={() => handleCallUser(facingMode)}
+              onClick={() => {
+                if (!requestBack) {
+                  sendStreams();
+                }
+                handleCallUser(facingMode);
+              }}
               className="border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
             >
               {requestBack ? "Request to join back" : "Accept"}

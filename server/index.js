@@ -82,6 +82,9 @@ io.on("connection", (socket) => {
   socket.on("trigger:stream", ({ to }) => {
     io.to(to).emit("trigger:stream", { from: socket.id });
   });
+  socket.on("req:back", ({ to }) => {
+    io.to(to).emit("req:back", { from: socket.id });
+  });
 
   socket.on("user:disconnected", ({ to, id }) => {
     storeSocketId = storeSocketId.filter((socket) => socket.id !== id);
