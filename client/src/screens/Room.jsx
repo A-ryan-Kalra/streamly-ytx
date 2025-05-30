@@ -39,6 +39,7 @@ function Room() {
       setShowCam(false);
     }
   }, []);
+
   async function handleNewUserJoined(data) {
     setRemoteSocketId(data?.id);
     setRemoteName(data?.name);
@@ -172,19 +173,20 @@ function Room() {
     await peer.setRemoteAnswer(ans);
 
     // if (!newStream) {
-    // sendStreams();
+    if (showCam) sendStreams();
+
     // }
   }
 
   async function handleNegoNeededIncomming({ from, offer }) {
-    console.log("handleNegoNeededIncomming", name);
-    sendStreams();
+    if (!showCam) sendStreams();
+
     const ans = await peer.getAnswer(offer);
     socket.emit("peer:nego:done", { to: from, ans });
   }
   async function handleNegoNeeded() {
-    sendStreams();
-    console.log("handleNegoNeeded", name);
+    if (!showCam) sendStreams();
+
     const offer = await peer.getOffer();
     socket.emit("peer:nego:needed", { offer, to: remoteSocketId });
   }
@@ -231,14 +233,29 @@ function Room() {
     // }
   }
 
-  async function handleUserDiscconnect({ from }) {
+  async function handleUserDiscconnect({ from, name, isCamSwitch }) {
     if (from === remoteSocketId) {
-      remoteStream.getTracks().forEach((track) => track.stop());
+      remoteStream?.getTracks()?.forEach((track) => track?.stop());
       // Clear remoteStream when user disconnects
       setRemoteStream(null);
       setRemoteSocketId("");
       setRemoteName("");
+      if (isCamSwitch) {
+        await myStream?.getTracks()?.forEach((track) => {
+          track.stop();
+        });
+        setMyStream(null);
+        navigate("/");
+      }
     }
+  }
+  async function handleRemoved({ from }) {
+    // if (from === remoteSocketId) {
+    alert(`${name} left the room`);
+    await removeStreams();
+    setRemoteSocketId("");
+    navigate("/");
+    // }
   }
 
   useEffect(() => {
@@ -249,6 +266,7 @@ function Room() {
     socket.on("peer:nego:final", handleNegoNeededFinal);
     socket.on("open:stream", handleStreamExecution);
     socket.on("user:disconnected", handleUserDiscconnect);
+    socket.on("removed", handleRemoved);
 
     return () => {
       socket.off("user:join", handleNewUserJoined);
@@ -258,6 +276,7 @@ function Room() {
       socket.off("peer:nego:final", handleNegoNeededFinal);
       socket.off("open:stream", handleStreamExecution);
       socket.off("user:disconnected", handleUserDiscconnect);
+      socket.off("removed", handleRemoved);
     };
   }, [
     socket,
@@ -268,24 +287,35 @@ function Room() {
     handleNegoNeededFinal,
     handleStreamExecution,
     handleUserDiscconnect,
+    handleRemoved,
   ]);
 
   async function removeStreams() {
     setRequestBack(true);
     console.log("close");
-    remoteStream?.getTracks()?.forEach((track) => {
+
+    socket.emit("user:disconnected", {
+      to: remoteSocketId,
+      id,
+      name,
+      isCamSwitch,
+    });
+    await myStream?.getTracks()?.forEach((track) => {
+      track.stop();
+    });
+    setMyStream(null);
+    // setRemoteSocketId("");
+    await remoteStream?.getTracks()?.forEach((track) => {
       track.stop();
     });
     setRemoteStream(null);
+
     if (isCamSwitch) {
       myStream?.getTracks()?.forEach((track) => {
         track.stop();
       });
       setMyStream(null);
     }
-
-    socket.emit("user:disconnected", { to: remoteSocketId, id });
-
     if (isCamSwitch) {
       navigate("/");
     }
@@ -294,7 +324,7 @@ function Room() {
   async function removeUserFromStream() {
     setRequestBack(true);
 
-    socket.emit("user:disconnected", { to: remoteSocketId, id });
+    socket.emit("user:disconnected", { to: remoteSocketId, id, name });
     await remoteStream?.getTracks()?.forEach((track) => {
       track.stop();
     });
@@ -314,7 +344,7 @@ function Room() {
       setRequestBack(false);
       console.log("close");
 
-      socket.emit("user:disconnected", { to: remoteSocketId, id });
+      socket.emit("user:disconnected", { to: remoteSocketId, id, name });
       await myStream?.getTracks()?.forEach((track) => {
         track.stop();
       });
@@ -332,7 +362,7 @@ function Room() {
         setRequestBack(false);
         console.log("close");
 
-        socket.emit("user:disconnected", { to: remoteSocketId, id });
+        socket.emit("user:disconnected", { to: remoteSocketId, id, name });
         await myStream?.getTracks()?.forEach((track) => {
           track.stop();
         });
@@ -370,7 +400,7 @@ function Room() {
             </p>
             <button
               onClick={() => {
-                if (!requestBack) {
+                if (!requestBack && !showCam) {
                   sendStreams();
                 }
                 handleCallUser(facingMode);
@@ -393,8 +423,9 @@ function Room() {
               Reload Stream
             </button>
             <p className="text-xs bg-red-600 text-white">
-              (Optional : Reload Stream If you are unable to communicate with
-              the user after you've accepted the request or joined back.)
+              (Optional :Press Reload Stream or check with another peer if you
+              are unable to communicate with each other after accepting the
+              request or rejoining.)
             </p>
           </>
         )}

@@ -86,13 +86,15 @@ io.on("connection", (socket) => {
     io.to(to).emit("req:back", { from: socket.id });
   });
 
-  socket.on("user:disconnected", ({ to, id }) => {
+  socket.on("user:disconnected", ({ to, id, name, isCamSwitch }) => {
     storeSocketId = storeSocketId.filter((socket) => socket.id !== id);
 
-    io.to(to).emit("user:disconnected", { from: socket.id });
+    io.to(to).emit("user:disconnected", { from: socket.id, name, isCamSwitch });
   });
   socket.on("disconnect", (reason) => {
     console.log(`Socket disconnected: ${socket.id}, Reason: ${reason}`);
+    socket.broadcast.emit("removed", { from: socket.id });
+
     storeSocketId = storeSocketId.filter(
       (socketMem) => socketMem.id !== socket.id
     );
