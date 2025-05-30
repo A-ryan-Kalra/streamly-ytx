@@ -6,9 +6,14 @@ function Lobby() {
   const navigate = useNavigate();
   const [details, setDetails] = useState({ name: "", room: "" });
   const { socket } = useSocket();
+  const [isRoomFull, setIsRoomFull] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!details.name || !details.room) {
+      alert("Fields required");
+      return;
+    }
     socket.emit("room:join", details);
   };
 
@@ -18,7 +23,8 @@ function Lobby() {
     if (success) navigate(`/room/${room}?accessId=${id}&name=${name}`);
   }
   function handleErrorMssage({ message }) {
-    console.log("message= ", message);
+    console.error(message);
+    setIsRoomFull(true);
     navigate("/");
   }
 
@@ -72,6 +78,11 @@ function Lobby() {
                 className="bg-zinc-200 p-1 border-none outline-none focus-visible:ring-0"
               />
             </div>
+            {isRoomFull && (
+              <h1 className="text-red-500 ml-auto">
+                Oops, Room is full — check back shortly.
+              </h1>
+            )}
             <button className="bg-cyan-400 mt-2 w-fit ml-auto hover:scale-110 transition duration-300 px-10 cursor-pointer py-2 rounded-2xl ">
               Submit
             </button>

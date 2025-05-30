@@ -29,9 +29,9 @@ webRtc-ytx 🔥 - A <strong>real-time</strong> video steaming and <strong>live c
 
 > [!NOTE]
 >
-> <h4>Seamless Camera Switching 🤳🏻</h4>
+> <h4>Seamless Camera Switching On Mobile🤳🏻</h4>
 > <ul>
-> <li> During a live call, users can switch their camera without any interruptions, allowing for a flexible and smooth experience.
+> <li> During a live call, users can switch their camera without any interruptions based on their devices, allowing for a flexible and smooth experience.
 > </li></ul>
 > <h4>Call Control Options 🔇 </h4>
 > <ul>

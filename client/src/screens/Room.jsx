@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 function Room() {
   const params = useParams();
-  const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const { socket } = useSocket();
@@ -24,66 +23,88 @@ function Room() {
   const [facingMode, setFacingMode] = useState("user");
   const [mute, setMute] = useState(false);
   const [remoteName, setRemoteName] = useState("");
-  const [showSentStream, setShowSentStream] = useState(false);
+  const [newStream, setNewStream] = useState(false);
   const [requestBack, setRequestBack] = useState(false);
-  const [triggerRemoteStream, setTriggerRemoteStream] = useState(false);
-  const [isNegoDone, setIsNegoDone] = useState("");
-  const [firstJoin, setFirstJoin] = useState(false);
-  const [isFinishStreaming, setIsFinishStreaming] = useState(false);
-  const [hideStream, setHideStream] = useState(false);
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const [showCam, setShowCam] = useState(false);
+  const [isCamSwitch, setIsCamSwitch] = useState(false);
+  const navigate = useNavigate();
 
+  useEffect(() => {
+    if (isMobile) {
+      console.log("You're on a mobile device");
+      setShowCam(true);
+    } else {
+      console.log("You're on a desktop device");
+      setShowCam(false);
+    }
+  }, []);
   async function handleNewUserJoined(data) {
     setRemoteSocketId(data?.id);
-
     setRemoteName(data?.name);
     if (myStream) {
       await peer.peer.addStream(myStream);
-
-      // sendStreams();
+      setNewStream(true);
     }
     setRequestBack(false);
-    setFirstJoin(true);
-    setIsFinishStreaming(false);
-
-    // setShowSentStream(false);
   }
+
+  const getCameraDeviceId = async (facingMode = "user") => {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter((d) => d.kind === "videoinput");
+
+    if (facingMode === "user") {
+      return (
+        videoDevices.find((d) => d.label.toLowerCase().includes("front"))
+          ?.deviceId || videoDevices[0]?.deviceId
+      );
+    } else {
+      return (
+        videoDevices.find((d) => d.label.toLowerCase().includes("back"))
+          ?.deviceId || videoDevices[1]?.deviceId
+      );
+    }
+  };
 
   const startCamera = async (facingMode) => {
     setMute(false);
 
+    const deviceId = await getCameraDeviceId(facingMode);
+
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode },
+      video: { facingMode, deviceId: { exact: deviceId } },
       audio: true,
     });
+    setMyStream(stream);
     const audioTrack = stream.getAudioTracks()[0];
-
-    const senders = peer.peer.getSenders();
-    if (audioTrack) {
-      const audioSender = senders.find((s) => s.track?.kind === "audio");
-      if (audioSender) {
-        await audioSender.replaceTrack(audioTrack);
-      }
-    }
     const videoTrack = stream.getVideoTracks()[0];
 
-    const sender = senders.find((s) => s.track?.kind === "video");
+    const senders = peer.peer.getSenders();
 
-    if (sender) {
-      await sender.replaceTrack(videoTrack);
-    } else {
-      // If no video sender exists yet, add the track
-      peer.peer.addTrack(videoTrack, stream);
+    const audioSender = senders.find((s) => s.track?.kind === "audio");
+    if (audioSender && audioTrack) {
+      await audioSender.replaceTrack(audioTrack);
+    } else if (audioTrack) {
+      peer.peer.addTrack(audioTrack, stream);
     }
 
-    setMyStream(stream);
-    sendStreams();
+    const videoSender = senders.find((s) => s.track?.kind === "video");
+    if (videoSender && videoTrack) {
+      await videoSender.replaceTrack(videoTrack);
+    } else if (videoTrack) {
+      peer.peer.addTrack(videoTrack, stream);
+    }
+    for (const track of stream.getTracks()) {
+      peer.peer.addTrack(track, stream);
+    }
+    // sendStreams();
   };
 
   const switchCamera = async (accessId) => {
     for (const track of myStream.getTracks()) {
       track.stop();
     }
-
+    setIsCamSwitch(true);
     setMyStream(null);
 
     const newMode = facingMode === "user" ? "environment" : "user";
@@ -93,8 +114,6 @@ function Room() {
   };
 
   async function handleCallUser(mode = "user") {
-    // setShowSentStream(false);
-
     try {
       // myStream?.getTracks()?.forEach((track) => track.stop());
       // setMyStream(null);
@@ -112,6 +131,7 @@ function Room() {
 
         const sender = senders.find((s) => s.track?.kind === "video");
         const audioSender = senders.find((s) => s.track?.kind === "audio");
+
         if (sender) {
           await sender.replaceTrack(videoTrack);
           await audioSender.replaceTrack(audioTrack);
@@ -120,7 +140,6 @@ function Room() {
           peer.peer.addTrack(videoTrack, stream);
           peer.peer.addTrack(audioTrack, stream);
         }
-        // sendStreams();
       }
       const offer = await peer.getOffer();
       socket.emit("user:call", { to: remoteSocketId, offer, name });
@@ -130,7 +149,6 @@ function Room() {
   }
 
   async function handleIcommingCall({ from, offer, name }) {
-    setShowSentStream(true);
     setRemoteSocketId(from);
     setRemoteName(name);
     setRequestBack(false);
@@ -140,16 +158,12 @@ function Room() {
     });
 
     setMyStream(stream);
-
     const ans = await peer.getAnswer(offer);
-    // for (const track of stream?.getTracks()) {
-    //   peer.peer.addTrack(track, stream);
-    // }
     socket.emit("call:accepted", { ans, to: from });
   }
 
-  function sendStreams() {
-    for (const track of myStream?.getTracks()) {
+  async function sendStreams() {
+    for (const track of myStream.getTracks()) {
       peer.peer.addTrack(track, myStream);
     }
   }
@@ -158,16 +172,12 @@ function Room() {
     await peer.setRemoteAnswer(ans);
 
     // if (!newStream) {
-    sendStreams();
-
+    // sendStreams();
     // }
-    // if (!isNegoDone)
   }
 
   async function handleNegoNeededIncomming({ from, offer }) {
     const ans = await peer.getAnswer(offer);
-    //  sendStreams();
-    setIsNegoDone(id);
     socket.emit("peer:nego:done", { to: from, ans });
   }
   async function handleNegoNeeded() {
@@ -177,6 +187,7 @@ function Room() {
 
   useEffect(() => {
     peer.peer.addEventListener("negotiationneeded", handleNegoNeeded);
+
     return () => {
       peer.peer.removeEventListener("negotiationneeded", handleNegoNeeded);
     };
@@ -184,73 +195,45 @@ function Room() {
 
   useEffect(() => {
     peer.peer.addEventListener("track", async (ev) => {
-      if (!remoteStream) {
-        socket.emit("trigger:stream", { to: id });
-        const remoteStreams = ev.streams;
+      const remoteStreams = ev.streams;
 
-        setRemoteStream(remoteStreams[0]);
-        // if (isRequestAccepted === id) {
-        //   setTriggerRemoteStream(true);
-        // }
-        if (!firstJoin) {
-          setTriggerRemoteStream(true);
-
-          // setTimeout(() => {
-          //   sendStreams();
-          // }, 3000);
-        }
-      }
-      // sendStreams();
+      setRemoteStream(remoteStreams[0]);
     });
   }, [myStream]);
 
-  useEffect(() => {
-    if (triggerRemoteStream && myStream) {
-      // alert(id);
-      // sendStreams();
-
-      setIsFinishStreaming(false);
-    }
-  }, [triggerRemoteStream, myStream]);
-
   async function handleNegoNeededFinal({ from, ans }) {
-    setIsNegoDone("");
     await peer.setRemoteAnswer(ans);
-    socket.emit("open:stream", { remoteSocketId });
+
+    // socket.emit("open:stream", { remoteSocketId });
   }
 
   async function handleStreamExecution() {
-    // sendStreams();
-    // if (!newStream)
+    if (!newStream) sendStreams();
+    if (newStream) {
+      alert("op");
+      // for (const track of myStream.getTracks()) {
+      //   track.stop();
+      // }
+      // // setIsCamSwitch(true);
+      // setMyStream(null);
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode },
-      audio: true,
-    });
-    setMyStream(stream);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode },
+        audio: true,
+      });
+      setMyStream(stream);
+    }
   }
 
   async function handleUserDiscconnect({ from }) {
     if (from === remoteSocketId) {
-      setIsFinishStreaming(true);
-      setHideStream(false);
       remoteStream.getTracks().forEach((track) => track.stop());
       // Clear remoteStream when user disconnects
       setRemoteStream(null);
       setRemoteSocketId("");
       setRemoteName("");
-
-      setIsNegoDone("");
     }
   }
-
-  const handleTriggerStream = () => {
-    // alert(id);
-    if (!remoteStream) {
-      sendStreams();
-      setHideStream(true);
-    }
-  };
 
   useEffect(() => {
     socket.on("user:join", handleNewUserJoined);
@@ -260,7 +243,6 @@ function Room() {
     socket.on("peer:nego:final", handleNegoNeededFinal);
     socket.on("open:stream", handleStreamExecution);
     socket.on("user:disconnected", handleUserDiscconnect);
-    socket.on("trigger:stream", handleTriggerStream);
 
     return () => {
       socket.off("user:join", handleNewUserJoined);
@@ -270,7 +252,6 @@ function Room() {
       socket.off("peer:nego:final", handleNegoNeededFinal);
       socket.off("open:stream", handleStreamExecution);
       socket.off("user:disconnected", handleUserDiscconnect);
-      socket.off("trigger:stream", handleTriggerStream);
     };
   }, [
     socket,
@@ -281,55 +262,54 @@ function Room() {
     handleNegoNeededFinal,
     handleStreamExecution,
     handleUserDiscconnect,
-    handleTriggerStream,
   ]);
 
-  async function removeStreams(id) {
-    setRequestBack(false);
-    setHideStream(false);
-
-    const remoteId = id;
-    socket.emit("user:disconnected", { to: remoteId, id });
-    await myStream?.getTracks()?.forEach((track) => {
+  async function removeStreams() {
+    setRequestBack(true);
+    console.log("close");
+    remoteStream?.getTracks()?.forEach((track) => {
       track.stop();
     });
-    setMyStream(null);
+    setRemoteStream(null);
+    if (isCamSwitch) {
+      alert("wow");
+      myStream?.getTracks()?.forEach((track) => {
+        track.stop();
+      });
+      setMyStream(null);
+    }
+
+    socket.emit("user:disconnected", { to: remoteSocketId, id });
+
+    if (isCamSwitch) {
+      navigate("/");
+    }
   }
 
   async function removeUserFromStream() {
     setRequestBack(true);
-    setIsNegoDone("");
-    setIsFinishStreaming(true);
-    setHideStream(false);
+
     socket.emit("user:disconnected", { to: remoteSocketId, id });
     await remoteStream?.getTracks()?.forEach((track) => {
       track.stop();
     });
     setRemoteStream(null);
-
+    setNewStream(false);
+    // navigate("/");
     // setRemoteName('');
     // setRemoteSocketId("");
   }
   useEffect(() => {
     window.addEventListener("popstate", async () => {
-      setShowSentStream(false);
-      await removeStreams(remoteSocketId);
-      setIsFinishStreaming(true);
-
-      setIsNegoDone("");
+      await removeStreams();
       setRemoteSocketId("");
     });
     window.addEventListener("beforeunload", async (e) => {
       e.preventDefault();
-      setIsFinishStreaming(true);
       setRequestBack(false);
-      setIsNegoDone(false);
       console.log("close");
-      setShowSentStream(false);
-      const remoteId = remoteSocketId;
-      setHideStream(false);
 
-      socket.emit("user:disconnected", { to: remoteId, id });
+      socket.emit("user:disconnected", { to: remoteSocketId, id });
       await myStream?.getTracks()?.forEach((track) => {
         track.stop();
       });
@@ -344,11 +324,9 @@ function Room() {
     return () => {
       window.removeEventListener("beforeunload", async (e) => {
         e.preventDefault();
-        setIsFinishStreaming(true);
         setRequestBack(false);
         console.log("close");
-        setShowSentStream(false);
-        setHideStream(false);
+
         socket.emit("user:disconnected", { to: remoteSocketId, id });
         await myStream?.getTracks()?.forEach((track) => {
           track.stop();
@@ -377,52 +355,38 @@ function Room() {
         <h1 className="text-xl font-semibold mt-2">
           Room No. <b>{params?.roomId}</b>
         </h1>
-        <h3>
+        <h3 className="text-[15px]">
           {remoteSocketId ? "" : "The room is empty- No participants yet"}
         </h3>
-        {/* {id === isRequestAccepted && remoteSocketId && ( */}
         {remoteSocketId && !remoteStream && (
           <>
             <p className="">
               <span className="capitalize">{remoteName}'s</span> in a room
             </p>
-            {requestBack ? (
-              <button
-                onClick={() => {
-                  setHideStream(true);
-
-                  handleCallUser(facingMode);
-                }}
-                className={
-                  "border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
-                }
-              >
-                Request to join back
-              </button>
-            ) : remoteSocketId && remoteStream ? (
-              ""
-            ) : (
-              <button
-                onClick={() => handleCallUser(facingMode)}
-                className={
-                  "border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
-                }
-              >
-                Connect
-              </button>
-            )}
+            <button
+              onClick={() => handleCallUser(facingMode)}
+              className="border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
+            >
+              {requestBack ? "Request to join back" : "Accept"}
+            </button>
           </>
         )}
         {remoteSocketId && remoteStream && (
           <h1 className="text-xl">{remoteName} is connected </h1>
         )}
-        {myStream && showSentStream && !isFinishStreaming && !hideStream && (
-          <button
-            onClick={sendStreams}
-            className="border-[1px] p-1 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
-          >
-            Reload Stream
-          </button>
+        {remoteSocketId && (
+          <>
+            <button
+              onClick={sendStreams}
+              className="border-[1px] p-1 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
+            >
+              Reload Stream
+            </button>
+            <p className="text-xs bg-red-600 text-white">
+              (Optional : Reload Stream If you are unable to communicate with
+              the user after you've accepted the request or joined back.)
+            </p>
+          </>
         )}
       </div>
 
@@ -433,7 +397,8 @@ function Room() {
               <span>Remote Stream({remoteName})</span>
               <button
                 title="Disconnect Call"
-                onClick={removeUserFromStream}
+                // onClick={removeUserFromStream}
+                onClick={showCam ? removeStreams : removeUserFromStream}
                 className="hover:bg-zinc-200 cursor-pointer rounded-full transition p-1"
               >
                 <PowerCircle className="w-5 h-5 text-red-500" />
@@ -461,13 +426,15 @@ function Room() {
             <div className="flex  justify-between items-center ">
               <h1 className="text-3xl font-semibold">{name}</h1>
               <div className="flex items-center gap-x-2">
-                <button
-                  onClick={switchCamera}
-                  title="Switch Camera"
-                  className="p-2 hover:bg-zinc-100 h-fit rounded-full cursor-pointer"
-                >
-                  <SwitchCamera className="w-5 h-5 text-blue-500" />
-                </button>
+                {showCam && (
+                  <button
+                    onClick={switchCamera}
+                    title="Switch Camera"
+                    className="p-2 hover:bg-zinc-100 h-fit rounded-full cursor-pointer"
+                  >
+                    <SwitchCamera className="w-5 h-5 text-blue-500" />
+                  </button>
+                )}
                 <button
                   title={mute ? "Unmute" : "Mute"}
                   onClick={muteAudio}
