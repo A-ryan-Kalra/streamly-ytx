@@ -1,9 +1,9 @@
-<h3>Website is live and running at <a href="https://webrtc-ytx.onrender.com/">webRtc-ytx</a></h3>
+<h3>Website is live and running at <a href="https://webrtc-ytx.onrender.com/">streamly-ytx</a></h3>
 <div align="center"><img src="/client/public/webrtc-ytx-template.png" /></div>
 
 <div align="center">
-<h1>webRtc-ytx 🔥</h1>
-webRtc-ytx 🔥 - A <strong>real-time</strong> video steaming and <strong>live calling</strong> web application designed to enable <strong>seamless communication</strong> through <strong>high-quality video and audio</strong>. Perfect for both one and one interactions in real-time.
+<h1>streamly-ytx 🔥</h1>
+streamly-ytx 🔥 - A <strong>real-time</strong> video steaming and <strong>live calling</strong> web application designed to enable <strong>seamless communication</strong> through <strong>high-quality video and audio</strong>. Perfect for both one and one interactions in real-time.
 </div>
 <br/>
 <br/>
@@ -24,7 +24,7 @@ webRtc-ytx 🔥 - A <strong>real-time</strong> video steaming and <strong>live c
 
 <br>
 
-<h1>Key Features of webRtc-ytx:</h1>
+<h1>Key Features of streamly-ytx:</h1>
 
 <br>
 
