@@ -205,10 +205,29 @@ function Room() {
 
       if (isCamSwitch) {
         alert(`${name} left the room`);
+        myStream?.getTracks()?.forEach((track) => {
+          track.stop();
+        });
+        setMyStream(null);
         navigate("/");
       }
+      // if (!isCamSwitch && !showCam) {
+      //   window.location.reload();
+      // }
     }
   }
+
+  const handleRemoved = () => {
+    myStream?.getTracks()?.forEach((track) => {
+      track.stop();
+    });
+    setMyStream(null);
+
+    remoteStream?.getTracks()?.forEach((track) => {
+      track.stop();
+    });
+    setRemoteStream(null);
+  };
 
   useEffect(() => {
     socket.on("user:join", handleNewUserJoined);
@@ -218,6 +237,7 @@ function Room() {
     socket.on("peer:nego:final", handleNegoNeededFinal);
     socket.on("open:stream", handleStreamExecution);
     socket.on("user:disconnected", handleUserDiscconnect);
+    socket.on("removed", handleRemoved);
 
     return () => {
       socket.off("user:join", handleNewUserJoined);
@@ -227,6 +247,7 @@ function Room() {
       socket.off("peer:nego:final", handleNegoNeededFinal);
       socket.off("open:stream", handleStreamExecution);
       socket.off("user:disconnected", handleUserDiscconnect);
+      socket.off("removed", handleRemoved);
     };
   }, [
     socket,
@@ -242,8 +263,8 @@ function Room() {
   function removeStreams() {
     setRequestBack(false);
     console.log("close");
-    myStream.getTracks()?.forEach((track) => {
-      track.stop();
+    myStream?.getTracks()?.forEach((track) => {
+      track?.stop();
     });
     setMyStream(null);
     socket.emit("user:disconnected", { to: remoteSocketId, id });
@@ -265,7 +286,15 @@ function Room() {
         name,
         isCamSwitch,
       });
+      await myStream?.getTracks()?.forEach((track) => {
+        track.stop();
+      });
+      setMyStream(null);
+      window.location.reload();
+
       navigate("/");
+    } else if (showCam) {
+      window.location.reload();
     } else {
       socket.emit("user:disconnected", {
         to: remoteSocketId,
