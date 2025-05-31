@@ -306,6 +306,25 @@ function Room() {
     // setRemoteName('');
     // setRemoteSocketId("");
   }
+
+  async function handleBeforeUnLoaded(e) {
+    e.preventDefault();
+    setRequestBack(false);
+    console.log("close");
+    setIsCamSwitch(false);
+    socket.emit("user:disconnected", { to: remoteSocketId, id });
+    await myStream?.getTracks()?.forEach((track) => {
+      track.stop();
+    });
+    setMyStream(null);
+    setRemoteSocketId("");
+    await remoteStream?.getTracks()?.forEach((track) => {
+      track.stop();
+    });
+    setRemoteStream(null);
+    socket.emit("remove:user", { to: "", id });
+  }
+
   useEffect(() => {
     window.addEventListener("popstate", () => {
       setIsCamSwitch(false);
@@ -318,42 +337,10 @@ function Room() {
       // window.location.reload();
     });
 
-    window.addEventListener("beforeunload", async (e) => {
-      e.preventDefault();
-      setRequestBack(false);
-      console.log("close");
-      setIsCamSwitch(false);
-      socket.emit("user:disconnected", { to: remoteSocketId, id });
-      await myStream?.getTracks()?.forEach((track) => {
-        track.stop();
-      });
-      setMyStream(null);
-      setRemoteSocketId("");
-      await remoteStream?.getTracks()?.forEach((track) => {
-        track.stop();
-      });
-      setRemoteStream(null);
-      socket.emit("remove:user", { to: "", id });
-    });
+    window.addEventListener("beforeunload", handleBeforeUnLoaded);
 
     return () => {
-      window.removeEventListener("beforeunload", async (e) => {
-        e.preventDefault();
-        setRequestBack(false);
-        console.log("close");
-        setIsCamSwitch(false);
-        socket.emit("user:disconnected", { to: remoteSocketId, id });
-        await myStream?.getTracks()?.forEach((track) => {
-          track.stop();
-        });
-        setMyStream(null);
-        setRemoteSocketId("");
-        await remoteStream?.getTracks()?.forEach((track) => {
-          track.stop();
-        });
-        setRemoteStream(null);
-        socket.emit("remove:user", { to: "", id });
-      });
+      window.removeEventListener("beforeunload", handleBeforeUnLoaded);
     };
   }, [myStream, remoteStream, isFinishCall]);
 
