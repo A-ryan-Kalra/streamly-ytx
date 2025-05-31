@@ -1,5 +1,5 @@
 <h3>Website is live and running at <a href="https://webrtc-ytx.onrender.com/">streamly-ytx</a></h3>
-<div align="center"><img src="/client/public/webrtc-ytx-template.png" /></div>
+<div align="center"><img src="/client/public/streamly-ytx-template.png" /></div>
 
 <div align="center">
 <h1>streamly-ytx 🔥</h1>
@@ -11,9 +11,6 @@ streamly-ytx 🔥 - A <strong>real-time</strong> video steaming and <strong>live
 <div align="center">
  <video src="https://github.com/user-attachments/assets/dc72ab66-3514-434f-9e35-1b54bb61aabd"  autoplay muted loop /> 
 </div>
-
-
-
 
 <h2>Zero Compromise on Privacy</h2>
 
