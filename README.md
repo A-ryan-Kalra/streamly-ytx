@@ -9,9 +9,10 @@ streamly-ytx 🔥 - A <strong>real-time</strong> video steaming and <strong>live
 <br/>
  
 <div align="center">
- <video src="https://github.com/user-attachments/assets/dc72ab66-3514-434f-9e35-1b54bb61aabd"  autoplay muted loop /> 
+ <video src="https://github.com/user-attachments/assets/0ad2685e-e997-4567-a92b-7ec3022ddb2a"  autoplay muted loop /> 
 </div>
-
+<br/>
+  
 <h2>Zero Compromise on Privacy</h2>
 
 ✅ 100% Free and Open Source\
