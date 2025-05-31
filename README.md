@@ -1,4 +1,4 @@
-<h3>Website is live and running at <a href="https://webrtc-ytx.onrender.com/">streamly-ytx</a></h3>
+<h3>Website is live and running at <a href="https://streamly-ytx.onrender.com/">streamly-ytx</a></h3>
 <div align="center"><img src="/client/public/streamly-ytx-template.png" /></div>
 
 <div align="center">
