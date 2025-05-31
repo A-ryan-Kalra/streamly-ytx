@@ -386,10 +386,11 @@ function Room() {
             >
               Reload Stream
             </button>
-            <p className="text-xs bg-red-600 p-1 text-white">
-              (Optional : Press Reload Stream or check with another user if you
-              are unable to communicate with each other after accepting or
-              joining back the user.)
+            <p className="text-xs bg-red-600  p-1 text-white">
+              (Optional : If encountering black screen,try reconnecting first or
+              Press Reload Stream; if you are still unable to communicate after
+              accepting or joining the other user, please check with the other
+              user to ensure the connection is established.)
             </p>
           </>
         )}
