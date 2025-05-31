@@ -85,10 +85,12 @@ io.on("connection", (socket) => {
   socket.on("req:back", ({ to }) => {
     io.to(to).emit("req:back", { from: socket.id });
   });
+  socket.on("remove:user", ({ to, id }) => {
+    storeSocketId = storeSocketId.filter((socket) => socket.id !== id);
+    if (to) storeSocketId = storeSocketId.filter((socket) => socket.id !== to);
+  });
 
   socket.on("user:disconnected", ({ to, id, name, isCamSwitch }) => {
-    storeSocketId = storeSocketId.filter((socket) => socket.id !== id);
-
     io.to(to).emit("user:disconnected", { from: socket.id, name, isCamSwitch });
   });
   socket.on("disconnect", (reason) => {

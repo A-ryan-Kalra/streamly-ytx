@@ -280,20 +280,21 @@ function Room() {
     setRemoteStream(null);
     setNewStream(false);
     if (isCamSwitch) {
+      await myStream?.getTracks()?.forEach((track) => {
+        track.stop();
+      });
+      setMyStream(null);
       socket.emit("user:disconnected", {
         to: remoteSocketId,
         id,
         name,
         isCamSwitch,
       });
-      await myStream?.getTracks()?.forEach((track) => {
-        track.stop();
-      });
-      setMyStream(null);
+      socket.emit("remove:user", { to: remoteSocketId, id });
       window.location.reload();
-
       navigate("/");
     } else if (showCam) {
+      socket.emit("remove:user", { to: remoteSocketId, id });
       window.location.reload();
     } else {
       socket.emit("user:disconnected", {
@@ -308,8 +309,13 @@ function Room() {
   useEffect(() => {
     window.addEventListener("popstate", () => {
       setIsCamSwitch(false);
+      myStream?.getTracks()?.forEach((track) => {
+        peer.peer.removeTrack(track);
+      });
       removeStreams();
       setRemoteSocketId("");
+      socket.emit("remove:user", { to: "", id });
+      // window.location.reload();
     });
 
     window.addEventListener("beforeunload", async (e) => {
@@ -327,6 +333,7 @@ function Room() {
         track.stop();
       });
       setRemoteStream(null);
+      socket.emit("remove:user", { to: "", id });
     });
 
     return () => {
@@ -345,6 +352,7 @@ function Room() {
           track.stop();
         });
         setRemoteStream(null);
+        socket.emit("remove:user", { to: "", id });
       });
     };
   }, [myStream, remoteStream, isFinishCall]);
