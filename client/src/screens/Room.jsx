@@ -323,11 +323,8 @@ function Room() {
         showCam,
       });
       socket.emit("remove:user", { to: remoteSocketId, id, name });
-      window.location.reload();
-      navigate("/");
     } else if (showCam) {
       socket.emit("remove:user", { to: remoteSocketId, id, name });
-      window.location.reload();
     } else {
       socket.emit("user:disconnected", {
         to: remoteSocketId,
