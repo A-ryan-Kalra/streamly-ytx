@@ -210,7 +210,7 @@ function Room() {
     setIsFinishCall(true);
 
     if (isCamSwitch || showCam) {
-      alert(`${name} left the room`);
+      alert(`${name} has left the room`);
       myStream?.getTracks()?.forEach((track) => {
         track.stop();
       });
