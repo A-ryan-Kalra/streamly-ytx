@@ -29,6 +29,7 @@ function Room() {
   const [isCamSwitch, setIsCamSwitch] = useState(false);
   const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   const [isFinishCall, setIsFinishCall] = useState(false);
+  const [showButtons, setShowButtons] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,6 +43,7 @@ function Room() {
   }, []);
 
   async function handleNewUserJoined(data) {
+    setShowButtons(true);
     setRemoteSocketId(data?.id);
     setRemoteName(data?.name);
     if (myStream) {
@@ -96,6 +98,7 @@ function Room() {
 
   async function handleCallUser(mode = "user") {
     try {
+      setShowButtons(false);
       // myStream?.getTracks()?.forEach((track) => track.stop());
       // setMyStream(null);
       setIsFinishCall(false);
@@ -141,6 +144,9 @@ function Room() {
     });
 
     setMyStream(stream);
+
+    setShowButtons(true);
+
     const ans = await peer.getAnswer(offer);
     socket.emit("call:accepted", { ans, to: from });
   }
@@ -153,7 +159,7 @@ function Room() {
 
   async function handleAcceptedCall({ ans }) {
     await peer.setRemoteAnswer(ans);
-
+    setShowButtons(true);
     // if (!newStream) {
     sendStreams();
     // }
@@ -179,7 +185,7 @@ function Room() {
   useEffect(() => {
     peer.peer.addEventListener("track", async (ev) => {
       const remoteStreams = ev.streams;
-
+      setShowButtons(true);
       setRemoteStream(remoteStreams[0]);
     });
   }, [myStream]);
@@ -195,12 +201,12 @@ function Room() {
   }
 
   async function handleUserDiscconnect({ from, name, isCamSwitch, showCam }) {
-    // if (from === remoteSocketId) {
+    // setShowButtons(false);
     remoteStream.getTracks().forEach((track) => track.stop());
     // Clear remoteStream when user disconnects
     setRemoteStream(null);
     // setRemoteSocketId("");
-    setRemoteName("");
+    // setRemoteName("");
     setIsFinishCall(true);
 
     if (isCamSwitch || showCam) {
@@ -209,21 +215,13 @@ function Room() {
         track.stop();
       });
       setMyStream(null);
-      // navigate("/");
+
       window.location.reload();
     }
-    // if (!isCamSwitch && !showCam) {
-    //   window.location.reload();
-    // }
-    // }
   }
 
   const handleRemoved = ({ from, name }) => {
-    console.log(from, name);
-    // alert(remoteSocketId);
     if (remoteSocketId === from) {
-      console.log("inside", from, name);
-
       myStream?.getTracks()?.forEach((track) => {
         track.stop();
       });
@@ -322,7 +320,7 @@ function Room() {
         isCamSwitch,
         showCam,
       });
-      socket.emit("remove:user", { to: remoteSocketId, id });
+      socket.emit("remove:user", { to: remoteSocketId, id, name });
       window.location.reload();
       navigate("/");
     } else if (showCam) {
@@ -342,11 +340,18 @@ function Room() {
   }
 
   async function handleBeforeUnLoaded(e) {
-    e.preventDefault();
+    // e.preventDefault();
+
     setRequestBack(false);
     console.log("close");
     setIsCamSwitch(false);
-    socket.emit("user:disconnected", { to: remoteSocketId, id });
+    socket.emit("user:disconnected", {
+      to: remoteSocketId,
+      id,
+      name,
+      showCam,
+      isCamSwitch,
+    });
     await myStream?.getTracks()?.forEach((track) => {
       track.stop();
     });
@@ -356,18 +361,18 @@ function Room() {
       track.stop();
     });
     setRemoteStream(null);
-    socket.emit("remove:user", { to: "", id });
+    socket.emit("remove:user", { to: remoteSocketId, id, name });
   }
 
   useEffect(() => {
     window.addEventListener("popstate", removeStreams);
 
-    // window.addEventListener("beforeunload", handleBeforeUnLoaded);
+    window.addEventListener("beforeunload", handleBeforeUnLoaded);
 
-    // return () => {
-    //   window.removeEventListener("beforeunload", handleBeforeUnLoaded);
-    // };
-  }, [myStream, remoteStream, isFinishCall]);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnLoaded);
+    };
+  }, [myStream, remoteStream]);
 
   const muteAudio = async () => {
     const audioTrack = myStream.getAudioTracks()[0];
@@ -383,8 +388,7 @@ function Room() {
         <h1 className="text-xl font-semibold mt-2">
           Room No. <b>{params?.roomId}</b>
         </h1>
-        <h3>
-          {" "}
+        <h3 className="text-sm">
           {remoteSocketId ? "" : "The room is empty- No participants yet"}
         </h3>
         {remoteSocketId && !remoteStream && (
@@ -392,18 +396,20 @@ function Room() {
             <p className="">
               <span className="capitalize">{remoteName}'s</span> in a room
             </p>
-            <button
-              onClick={() => handleCallUser(facingMode)}
-              className="border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
-            >
-              {requestBack ? "Request to join back" : "Accept"}
-            </button>
+            {showButtons && (
+              <button
+                onClick={() => handleCallUser(facingMode)}
+                className="border-[1px] px-3 py-2 rounded-md cursor-pointer active:scale-90 transition hover:bg-zinc-100"
+              >
+                {requestBack ? "Request to join back" : "Accept"}
+              </button>
+            )}
           </>
         )}
         {remoteSocketId && remoteStream && (
           <h1 className="text-xl">{remoteName} is connected </h1>
         )}
-        {myStream && !isFinishCall && (
+        {myStream && !isFinishCall && showButtons && (
           <>
             <button
               onClick={sendStreams}
