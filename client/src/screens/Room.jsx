@@ -201,23 +201,12 @@ function Room() {
   }
 
   async function handleUserDiscconnect({ from, name, isCamSwitch, showCam }) {
-    // setShowButtons(false);
     remoteStream.getTracks().forEach((track) => track.stop());
     // Clear remoteStream when user disconnects
     setRemoteStream(null);
-    // setRemoteSocketId("");
-    // setRemoteName("");
+
     setIsFinishCall(true);
-
-    if (isCamSwitch || showCam) {
-      alert(`${name} has left the room`);
-      myStream?.getTracks()?.forEach((track) => {
-        track.stop();
-      });
-      setMyStream(null);
-
-      window.location.reload();
-    }
+    console.log(isCamSwitch, showCam);
   }
 
   const handleRemoved = ({ from, name }) => {
