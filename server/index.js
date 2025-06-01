@@ -40,6 +40,7 @@ io.on("connection", (socket) => {
       if (isRumFull) {
         throw new Error("Room is full");
       }
+      storeSocketId.push({ id: socket.id, room });
 
       console.log("socket collection", storeSocketId);
       socket.join(room);

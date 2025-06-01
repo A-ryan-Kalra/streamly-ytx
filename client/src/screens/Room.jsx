@@ -271,7 +271,9 @@ function Room() {
 
   function removeStreams() {
     setIsCamSwitch(false);
-
+    if (!myStream) {
+      window.location.reload();
+    }
     // setRemoteSocketId("");
     myStream.getTracks()?.forEach((track) => {
       track?.stop();
@@ -292,7 +294,7 @@ function Room() {
       id,
       name,
       isCamSwitch,
-      showCam: true,
+      showCam,
     });
     socket.emit("remove:user", { to: remoteSocketId, id, name });
     // socket.emit("remove:user", { to: remoteSocketId, id });
