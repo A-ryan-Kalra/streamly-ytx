@@ -206,7 +206,6 @@ function Room() {
     setRemoteStream(null);
 
     setIsFinishCall(true);
-    console.log(isCamSwitch, showCam);
   }
 
   const handleRemoved = ({ from, name }) => {
