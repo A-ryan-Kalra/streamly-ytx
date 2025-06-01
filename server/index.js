@@ -40,7 +40,6 @@ io.on("connection", (socket) => {
       if (isRumFull) {
         throw new Error("Room is full");
       }
-      storeSocketId.push({ id: socket.id, room });
 
       console.log("socket collection", storeSocketId);
       socket.join(room);
@@ -85,17 +84,26 @@ io.on("connection", (socket) => {
   socket.on("req:back", ({ to }) => {
     io.to(to).emit("req:back", { from: socket.id });
   });
-  socket.on("remove:user", ({ to, id }) => {
+  socket.on("remove:user", ({ to, id, name }) => {
+    io.to(to).emit("removed", {
+      from: socket.id,
+      name: name,
+    });
+
     storeSocketId = storeSocketId.filter((socket) => socket.id !== id);
     if (to) storeSocketId = storeSocketId.filter((socket) => socket.id !== to);
   });
 
-  socket.on("user:disconnected", ({ to, id, name, isCamSwitch }) => {
-    io.to(to).emit("user:disconnected", { from: socket.id, name, isCamSwitch });
+  socket.on("user:disconnected", ({ to, id, name, isCamSwitch, showCam }) => {
+    io.to(to).emit("user:disconnected", {
+      from: socket.id,
+      name,
+      isCamSwitch,
+      showCam,
+    });
   });
   socket.on("disconnect", (reason) => {
     console.log(`Socket disconnected: ${socket.id}, Reason: ${reason}`);
-    socket.broadcast.emit("removed", { from: socket.id });
 
     storeSocketId = storeSocketId.filter(
       (socketMem) => socketMem.id !== socket.id

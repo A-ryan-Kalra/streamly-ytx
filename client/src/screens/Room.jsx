@@ -194,39 +194,49 @@ function Room() {
     if (!newStream) sendStreams();
   }
 
-  async function handleUserDiscconnect({ from, name, isCamSwitch }) {
-    if (from === remoteSocketId) {
-      remoteStream.getTracks().forEach((track) => track.stop());
-      // Clear remoteStream when user disconnects
-      setRemoteStream(null);
-      setRemoteSocketId("");
-      setRemoteName("");
-      setIsFinishCall(true);
+  async function handleUserDiscconnect({ from, name, isCamSwitch, showCam }) {
+    // if (from === remoteSocketId) {
+    remoteStream.getTracks().forEach((track) => track.stop());
+    // Clear remoteStream when user disconnects
+    setRemoteStream(null);
+    // setRemoteSocketId("");
+    setRemoteName("");
+    setIsFinishCall(true);
 
-      if (isCamSwitch) {
-        alert(`${name} left the room`);
-        myStream?.getTracks()?.forEach((track) => {
-          track.stop();
-        });
-        setMyStream(null);
-        navigate("/");
-      }
-      // if (!isCamSwitch && !showCam) {
-      //   window.location.reload();
-      // }
+    if (isCamSwitch || showCam) {
+      alert(`${name} left the room`);
+      myStream?.getTracks()?.forEach((track) => {
+        track.stop();
+      });
+      setMyStream(null);
+      // navigate("/");
+      window.location.reload();
     }
+    // if (!isCamSwitch && !showCam) {
+    //   window.location.reload();
+    // }
+    // }
   }
 
-  const handleRemoved = () => {
-    myStream?.getTracks()?.forEach((track) => {
-      track.stop();
-    });
-    setMyStream(null);
+  const handleRemoved = ({ from, name }) => {
+    console.log(from, name);
+    // alert(remoteSocketId);
+    if (remoteSocketId === from) {
+      console.log("inside", from, name);
 
-    remoteStream?.getTracks()?.forEach((track) => {
-      track.stop();
-    });
-    setRemoteStream(null);
+      myStream?.getTracks()?.forEach((track) => {
+        track.stop();
+      });
+      setMyStream(null);
+      remoteStream?.getTracks()?.forEach((track) => {
+        track.stop();
+      });
+      setRemoteStream(null);
+      alert(`${name} has left the room`);
+
+      navigate("/");
+      window.location.reload();
+    }
   };
 
   useEffect(() => {
@@ -258,16 +268,37 @@ function Room() {
     handleNegoNeededFinal,
     handleStreamExecution,
     handleUserDiscconnect,
+    handleRemoved,
   ]);
 
   function removeStreams() {
-    setRequestBack(false);
-    console.log("close");
-    myStream?.getTracks()?.forEach((track) => {
+    setIsCamSwitch(false);
+
+    // setRemoteSocketId("");
+    myStream.getTracks()?.forEach((track) => {
       track?.stop();
     });
+
     setMyStream(null);
-    socket.emit("user:disconnected", { to: remoteSocketId, id });
+
+    remoteStream.getTracks()?.forEach((track) => {
+      track.stop();
+    });
+    setRemoteStream(null);
+
+    setRequestBack(false);
+    console.log("close");
+
+    socket.emit("user:disconnected", {
+      to: remoteSocketId,
+      id,
+      name,
+      isCamSwitch,
+      showCam: true,
+    });
+    socket.emit("remove:user", { to: remoteSocketId, id, name });
+    // socket.emit("remove:user", { to: remoteSocketId, id });
+    window.location.reload();
   }
 
   async function removeUserFromStream() {
@@ -279,7 +310,7 @@ function Room() {
     });
     setRemoteStream(null);
     setNewStream(false);
-    if (isCamSwitch) {
+    if (isCamSwitch || showCam) {
       await myStream?.getTracks()?.forEach((track) => {
         track.stop();
       });
@@ -289,17 +320,20 @@ function Room() {
         id,
         name,
         isCamSwitch,
+        showCam,
       });
       socket.emit("remove:user", { to: remoteSocketId, id });
       window.location.reload();
       navigate("/");
     } else if (showCam) {
-      socket.emit("remove:user", { to: remoteSocketId, id });
+      socket.emit("remove:user", { to: remoteSocketId, id, name });
       window.location.reload();
     } else {
       socket.emit("user:disconnected", {
         to: remoteSocketId,
         id,
+        name,
+        showCam,
       });
     }
 
@@ -326,22 +360,13 @@ function Room() {
   }
 
   useEffect(() => {
-    window.addEventListener("popstate", () => {
-      setIsCamSwitch(false);
-      myStream?.getTracks()?.forEach((track) => {
-        peer.peer.removeTrack(track);
-      });
-      removeStreams();
-      setRemoteSocketId("");
-      socket.emit("remove:user", { to: "", id });
-      // window.location.reload();
-    });
+    window.addEventListener("popstate", removeStreams);
 
-    window.addEventListener("beforeunload", handleBeforeUnLoaded);
+    // window.addEventListener("beforeunload", handleBeforeUnLoaded);
 
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnLoaded);
-    };
+    // return () => {
+    //   window.removeEventListener("beforeunload", handleBeforeUnLoaded);
+    // };
   }, [myStream, remoteStream, isFinishCall]);
 
   const muteAudio = async () => {
@@ -420,7 +445,7 @@ function Room() {
               // muted={mute}
               width={"100%"}
               height={"100%"}
-              playing
+              playing={remoteStream ? true : false}
             />
           </div>
         )}
@@ -462,7 +487,7 @@ function Room() {
               width={"100%"}
               height={"100%"}
               muted={mute}
-              playing
+              playing={myStream ? true : false}
             />
           </div>
         )}
