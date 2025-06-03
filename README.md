@@ -93,7 +93,7 @@ streamly-ytx 🔥 - A <strong>real-time</strong> video steaming and <strong>live
 ```
 
 <div align="center">
-Open <a href='http://localhost:3000'>http://localhost:5173</a> in your browser to see the result.
+Open <a href='http://localhost:5173'>http://localhost:5173</a> in your browser to see the result.
 <br>
 <br>
 Pleasure contributing 🕶️ <br>
