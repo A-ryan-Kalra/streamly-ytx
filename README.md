@@ -1,9 +1,9 @@
-<h3>Website is live and running at <a href="https://streamly-ytx.onrender.com/">streamly-ytx</a></h3>
+<h3>Website is live and hosted at <a href="https://streamly-ytx.onrender.com/">streamly-ytx</a></h3>
 <div align="center"><img src="/client/public/streamly-ytx-template.png" /></div>
 
 <div align="center">
-<h1>streamly-ytx 🔥</h1>
-streamly-ytx 🔥 - A <strong>real-time</strong> video steaming and <strong>live calling</strong> web application designed to enable <strong>seamless communication</strong> through <strong>high-quality video and audio</strong>. Perfect for both one and one interactions in real-time.
+<h1>streamly-ytx 🎥🔴🔊</h1>
+streamly-ytx 🎥🔴🔊 - A <strong>real-time</strong> video steaming and <strong>live calling</strong> web application designed to enable <strong>seamless communication</strong> through <strong>high-quality video and audio</strong>. Perfect for both one and one interactions in real-time.
 </div>
 <br/>
 <br/>
